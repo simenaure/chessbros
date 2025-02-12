@@ -11,9 +11,9 @@ const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-96">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+    <div className="bg-white p-8 rounded-2xl shadow-2xl w-96 relative">
+      <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
         <div className="mb-4">
           <label className="block text-gray-600 text-sm mb-2">Email:</label>
           <input
