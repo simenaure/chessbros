@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import Profile from './profile/profile.tsx';
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-
+import LoginSetup from './login/logintosignup.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -11,7 +11,8 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/profile" element={<Profile />} />
       </Routes>
-      <nav><Link to = "/profile">Go to profile page</Link></nav>
+      <Link to = "/profile">Go to profile page</Link>
     </BrowserRouter>
-  </StrictMode>,
+    <LoginSetup />
+  </StrictMode>
 )
