@@ -1,18 +1,42 @@
+import './index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
-import Profile from './profile/profile.tsx';
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import LoginSetup from './login/logintosignup.tsx'
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+import FrontPage from './pages/FrontPage.tsx';
+import ProfilePage from './pages/ProfilePage.tsx';
+import ErrorPage from './pages/ErrorPage.tsx';
+import Layout from './pages/Layout.tsx';
+import Users from "./pages/DatabasePage.tsx";
 
-createRoot(document.getElementById('root')!).render(
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      {
+        path: '/',
+        element: <FrontPage />,
+      },
+      {
+        path: '/profile',
+        element: <ProfilePage />
+      },
+      {
+        path: '/login',
+        element: <LoginSetup />
+      },
+      {
+        path: '/users',
+        element: <Users />
+      }
+    ],
+    errorElement: <ErrorPage />
+  }
+]);
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
-      <Link to = "/profile">Go to profile page</Link>
-    </BrowserRouter>
-    <LoginSetup />
+    <RouterProvider router={router} />
   </StrictMode>
 )
