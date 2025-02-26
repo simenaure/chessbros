@@ -7,6 +7,7 @@
     height: 100vh;
     text-align: center;
     background: linear-gradient(to bottom, #e3e2df, #d6d5d2);
+    z-index: 1;
 }
 
 .front-container h1 {
@@ -75,3 +76,19 @@
     border-radius: 10px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
+.welcome-text {
+    position: relative;
+    z-index: 1; 
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: black;
+  }
+  
+  .welcome-subtext {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    font-size: 16px;
+    color: black;
+  }

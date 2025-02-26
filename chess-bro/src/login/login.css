@@ -1,0 +1,79 @@
+.login-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  .login-box {
+    background: #e3e2df;
+    padding: 20px;
+    border-radius: 16px;
+    width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    text-align: center;
+  }
+  
+  .login-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: black;
+  }
+
+  .login-label {
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-align: left;
+    color: black;
+  }
+  
+  .login-input {
+    width: 90%;
+    padding: 10px;
+    border: 1px solid gray;
+    border-radius: 8px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  
+  .login-input:focus {
+    border: 2px solid #005f5f;
+  }
+  
+  .login-button {
+    width: 70%;
+    background: #005f5f;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border: none;
+    outline: none;
+    margin-top: 10px;
+  }
+  
+  .login-button:hover {
+    background: #004545;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px; 
+    font-weight: bold;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: black; 
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .close-button:hover {
+    color: red; 
+  }
