@@ -1,6 +1,4 @@
-import chessBroLogo from "../assets/chess-kopi.jpg";
 import "./Front.css";
-import { FaMapMarkerAlt } from "react-icons/fa";
 import chessGif from "../assets/chess-gif.gif";
 
 const front: React.FC = () => {
@@ -15,14 +13,6 @@ const front: React.FC = () => {
         <p className="welcome-subtext">
           Find your next chess opponent in Trondheim today!
         </p>
-
-        {/* Map Button */}
-        <div className="button-container">
-          <button className="btn">
-            <FaMapMarkerAlt />
-            Chess Map
-          </button>
-        </div>
 
         {/* chess gif */}
         <img src={chessGif} alt="Chess Gif" className="chess-gif" />
