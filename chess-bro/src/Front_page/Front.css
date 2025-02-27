@@ -1,0 +1,96 @@
+.front-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    text-align: center;
+    background: linear-gradient(to bottom, #e3e2df, #d6d5d2);
+    z-index: 1;
+}
+
+.front-container h1 {
+    position: relative;
+    top: -40px;
+}
+
+.logo-img {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 80px;
+    height: auto;
+    cursor: pointer;
+    transition: transfrom 0.2s ease;
+}
+
+.logo-img:active {
+    transform: scale(0.95);
+}
+
+.login-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.button-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn { 
+    display: flex;
+    align-items: center;  
+    justify-content: center; 
+    gap: 8px; 
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    background-color: #008080; 
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background-color: #005f5f;
+    color: white;
+}
+
+.btn-icon {
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.chess-gif {
+    width: 1000px;
+    max-width: 80%;
+    margin-top: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+.welcome-text {
+    position: relative;
+    z-index: 1; 
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: black;
+  }
+  
+  .welcome-subtext {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    font-size: 16px;
+    color: black;
+  }
