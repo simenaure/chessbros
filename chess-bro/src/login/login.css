@@ -34,10 +34,11 @@
   .login-input {
     width: 90%;
     padding: 10px;
-    border: 1px solid gray;
+    border: 1px solid black;
     border-radius: 8px;
     outline: none;
     transition: border 0.2s;
+    color: black;
   }
   
   .login-input:focus {

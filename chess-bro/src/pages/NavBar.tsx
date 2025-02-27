@@ -1,21 +1,63 @@
 import { Link } from "react-router-dom";
+import LoginSetup from "../login/login.tsx";
+import SignupSetup from "../login/signup.tsx";
+import { FaSignInAlt, FaUserPlus } from "react-icons/fa";
+import { useState } from "react";
+import "../Front_page/Front.css";
 
 export default function NavBar() {
-    return (
-        <div>
-            <ul className="flex justify-between items-center w-full h-10 bg-gray-300">
-                <NavBarButton page="Home" to="/" />
-                <NavBarButton page="Profile" to="/profile" />
-                <NavBarButton page="Login" to="/login" />
-            </ul>
-        </div>
-    )
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+  return (
+    <>
+      <div>
+        <ul className="flex justify-between items-center w-full h-12 bg-gray-300 px-6">
+          <div className="flex space-x-2">
+            <NavBarButton page="Home" to="/" className="btn" />
+            <NavBarButton page="Profile" to="/profile" className="btn" />
+          </div>
+          {/* Login & Signup Buttons */}
+          <div className="flex space-x-2">
+            <button
+              className="btn flex items-center px-4 py-2"
+              onClick={() => setIsLoginOpen(true)}
+            >
+              <FaSignInAlt className="btn-icon" />
+              Login
+            </button>
+            <button className="btn" onClick={() => setIsSignupOpen(true)}>
+              <FaUserPlus className="btn-icon" />
+              Sign Up
+            </button>
+          </div>
+        </ul>
+      </div>
+
+      {/* Login & Signup Modals */}
+      <LoginSetup isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <SignupSetup
+        isOpen={isSignupOpen}
+        onClose={() => setIsSignupOpen(false)}
+      />
+    </>
+  );
 }
 
-function NavBarButton({page, to} : {page: string, to: string}){
-    return (
-        <Link to={to} className="border-1 m-2 p-1 w-1/10 text-center">
-            {page}
-        </Link>
-    )
+function NavBarButton({
+  page,
+  to,
+  className = "",
+}: {
+  page: string;
+  to: string;
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`btn flex items-center px-4 py-2 text-center ${className}`}
+    >
+      {page}
+    </Link>
+  );
 }

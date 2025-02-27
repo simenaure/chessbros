@@ -14,6 +14,7 @@
     padding: 20px;
     border-radius: 16px;
     width: 350px;
+    max-height: 80%;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: relative;
     text-align: center;
@@ -21,6 +22,7 @@
     flex-direction: column;
     align-items: center;
     z-index: 10000;
+    overflow-y: auto;
   }
 
   .close-button {
@@ -66,10 +68,11 @@
     text-align: left;
     display: block;
     margin: 0 auto 10px auto;
+    color: black;
   }
 
   .signup-input:focus {
-    border: 2px solid #005f5f;
+    border: 2px solid #005f5f
   }
 
   .signup-select {
@@ -81,6 +84,7 @@
     display: block;
     margin: 10px auto;
     text-align: left;
+    color: black;
   }
 
   .gender-container {
@@ -99,6 +103,20 @@
     font-size: 14px;
     color: black;
   }
+
+  input[type="radio"] {
+    appearance: none; 
+    width: 16px;
+    height: 16px;
+    border: 2px solid black; 
+    border-radius: 50%; 
+    background-color: white; 
+    cursor: pointer;
+}
+
+input[type="radio"]:checked {
+    background-color: black;
+}
 
   .signup-button {
     width: 80%;
