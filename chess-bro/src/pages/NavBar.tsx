@@ -15,6 +15,7 @@ export default function NavBar() {
           <div className="flex space-x-2">
             <NavBarButton page="Home" to="/" className="btn" />
             <NavBarButton page="Profile" to="/profile" className="btn" />
+            <NavBarButton page="Map" to="/map" className="btn" />
           </div>
           {/* Login & Signup Buttons */}
           <div className="flex space-x-2">

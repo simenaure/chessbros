@@ -1,10 +1,11 @@
-// server.ts
-import express, { Request, Response } from "express";
+import express from "express";
 import cors from "cors";
-import { Pool } from "pg";
+import pg from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const { Pool } = pg;
 
 const app = express();
 app.use(cors());
@@ -18,8 +19,7 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT) || 5432,
 });
 
-// API-endepunkt for å hente brukere
-app.get("/api/users", async (_req: Request, res: Response) => {
+app.get("/api/users", async (_req, res) => {
   try {
     const result = await pool.query("SELECT * FROM users");
     res.json(result.rows);
