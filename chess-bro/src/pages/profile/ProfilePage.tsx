@@ -2,7 +2,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import PersonalInfo from './PersonalInfo';
 import Preferences from './Preferences';
 import History from './History';
@@ -16,7 +16,12 @@ export default function ProfilePage() {
 
     return (
         <div className="flex flex-col gap-20">
-            <h1 className='self-center'>Dette er din profilside {params.profileId}</h1>
+            <div className="flex flex-row">
+                <h1 className='self-center justify-center'>Dette er din profilside {params.profileId}</h1>
+                <Button variant="outlined" color="error" sx={{margin: 1, justifySelf: 'flex-end'}}
+                //onClick={setIsLogin()}
+                >Logg ut</Button>
+            </div>
             
             <div className='flex flex-row'>
                 <Tabs
