@@ -4,10 +4,10 @@ import { createRoot } from 'react-dom/client'
 import LoginSetup from './login/logintosignup.tsx'
 import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import FrontPage from './pages/FrontPage.tsx';
-import ProfilePage from './pages/ProfilePage.tsx';
+import ProfilePage from './pages/profile/ProfilePage.tsx';
 import ErrorPage from './pages/ErrorPage.tsx';
 import Layout from './pages/Layout.tsx';
-import Users from "./pages/DatabasePage.tsx";
+import Users from "./pages/databasepage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -19,7 +19,7 @@ const router = createBrowserRouter([
         element: <FrontPage />,
       },
       {
-        path: '/profile',
+        path: '/profile/:profileId',
         element: <ProfilePage />
       },
       {
