@@ -8,6 +8,7 @@ import ProfilePage from "./pages/ProfilePage.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Layout from "./pages/Layout.tsx";
 import Users from "./pages/databasepage.tsx";
+import MapPage from "./mapstuff/MapPage.tsx"
 
 const router = createBrowserRouter([
   {
@@ -30,6 +31,12 @@ const router = createBrowserRouter([
         path: "/users",
         element: <Users />,
       },
+        {
+          path: '/map',
+          element: <MapPage />
+        },
+  
+      
     ],
     errorElement: <ErrorPage />,
   },

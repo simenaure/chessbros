@@ -6,6 +6,7 @@ export default function NavBar() {
             <ul className="flex justify-between items-center w-full h-10 bg-gray-300">
                 <NavBarButton page="Home" to="/" />
                 <NavBarButton page="Profile" to="/profile" />
+                <NavBarButton page="Map" to="/map" />
                 <NavBarButton page="Login" to="/login" />
             </ul>
         </div>
