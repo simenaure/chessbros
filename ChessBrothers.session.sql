@@ -1,1 +1,4 @@
-INSERT INTO users (username, email, gender) VALUES ('John Doe', ' snabel@hotmail.com', 'male'), ('Jane Doe', 'test@sigm.no', 'woman');
+INSERT INTO users (username, firstname, lastname, email, gender)
+VALUES ('lilleduracell', 'jens', 'opstad', 'jens@stud.ntnu', 'male');
+
+

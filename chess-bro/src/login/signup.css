@@ -1,0 +1,135 @@
+
+.signup-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+  }
+  
+  .signup-box {
+    background: #e3e2df;
+    padding: 20px;
+    border-radius: 16px;
+    width: 350px;
+    max-height: 80%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10000;
+    overflow-y: auto;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: black;
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .close-button:hover {
+    color: red;
+  }
+
+  .signup-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: black;
+  }
+
+  .signup-label {
+    font-size: 14px;
+    color: black;
+    text-align: left;
+    width: 80%;
+    margin: 5px 0;
+    display: block;
+  }
+
+  .signup-input {
+    width: 80%;
+    padding: 10px;
+    border: 1px solid gray;
+    border-radius: 6px;
+    outline: none;
+    transition: border 0.2s;
+    text-align: left;
+    display: block;
+    margin: 0 auto 10px auto;
+    color: black;
+  }
+
+  .signup-input:focus {
+    border: 2px solid #005f5f
+  }
+
+  .signup-select {
+    width: 80%;
+    padding: 10px;
+    border: 1px solid gray;
+    border-radius: 6px;
+    outline: none;
+    display: block;
+    margin: 10px auto;
+    text-align: left;
+    color: black;
+  }
+
+  .gender-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 80%;
+    margin-bottom: 15px;
+  }
+
+  .gender-container label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    color: black;
+  }
+
+  input[type="radio"] {
+    appearance: none; 
+    width: 16px;
+    height: 16px;
+    border: 2px solid black; 
+    border-radius: 50%; 
+    background-color: white; 
+    cursor: pointer;
+}
+
+input[type="radio"]:checked {
+    background-color: black;
+}
+
+  .signup-button {
+    width: 80%;
+    background: #005f5f;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border: none;
+    margin-top: 15px;
+  }
+  
+  .signup-button:hover {
+    background: #004545;
+  }

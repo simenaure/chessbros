@@ -6,6 +6,10 @@ export default function PersonalInfo() {
     const [gender, setGender] = useState("");
     const [country, setCountry] = useState("");
     const [countries, setCountries] = useState<string[]>([]);
+    const [address, setAddress] = useState("");
+    const [phone, setPhone] = useState("");
+    const [zip, setZip] = useState("");
+    const [city, setCity] = useState("");
 
     const [editMode, setEditMode] = useState(false);
 

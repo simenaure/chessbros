@@ -18,7 +18,7 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-20">
             <div className="flex flex-row justify-between">
                 <div></div>
-                <h1 className='self-center justify-center'>Dette er din profilside {params.profileId}</h1>
+                <h1 className='self-center justify-center'>Your profile, {params.profileId}</h1>
                 <Button variant="outlined" color="error" sx={{margin: 2, justifySelf: 'flex-end'}}
                 //onClick={setIsLogin()}
                 >Logg ut</Button>
