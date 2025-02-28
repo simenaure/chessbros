@@ -16,27 +16,25 @@ export default function ProfilePage() {
 
     return (
         <div className="flex flex-col gap-20">
-            <div className="flex flex-row">
+            <div className="flex flex-row justify-between">
+                <div></div>
                 <h1 className='self-center justify-center'>Dette er din profilside {params.profileId}</h1>
-                <Button variant="outlined" color="error" sx={{margin: 1, justifySelf: 'flex-end'}}
+                <Button variant="outlined" color="error" sx={{margin: 2, justifySelf: 'flex-end'}}
                 //onClick={setIsLogin()}
                 >Logg ut</Button>
             </div>
             
-            <div className='flex flex-row'>
+            <div className='grid grid-cols-[1fr_3fr_1fr]'>
                 <Tabs
                     orientation="vertical"
                     value={tab}
                     onChange={(e, newTab) => setTab(newTab)}
-                    sx={{
-                        width: 1/5
-                    }}
                 >
                     <Tab label="Personal Info"/>
                     <Tab label="Preferences"/>
                     <Tab label="History"/>
                 </Tabs>
-                <Box>
+                <Box sx={{width: "100%", marginX: "20px"}}>
                     {tab === 0 && <PersonalInfo />}
                     {tab === 1 && <Preferences />}
                     {tab === 2 && <History />}
