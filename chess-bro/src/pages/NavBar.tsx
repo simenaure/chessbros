@@ -14,7 +14,7 @@ export default function NavBar() {
         <ul className="flex justify-between items-center w-full h-12 bg-gray-300 px-6">
           <div className="flex space-x-2">
             <NavBarButton page="Home" to="/" className="btn" />
-            <NavBarButton page="Profile" to="/profile" className="btn" />
+            <NavBarButton page="Profile" to="/profile/1" className="btn" />
             <NavBarButton page="Map" to="/map" className="btn" />
           </div>
           {/* Login & Signup Buttons */}
