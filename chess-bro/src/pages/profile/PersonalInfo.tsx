@@ -1,87 +1,129 @@
 import { Button, MenuItem, Select, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 
-export default function PersonalInfo() {
+interface PersonalInfoProps {
+  profileId: string;
+}
 
-    const [gender, setGender] = useState("");
-    const [country, setCountry] = useState("");
-    const [countries, setCountries] = useState<string[]>([]);
-    const [address, setAddress] = useState("");
-    const [phone, setPhone] = useState("");
-    const [zip, setZip] = useState("");
-    const [city, setCity] = useState("");
+export default function PersonalInfo({ profileId }: PersonalInfoProps) {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [gender, setGender] = useState("");
+  const [country, setCountry] = useState("");
+  const [countries, setCountries] = useState<string[]>([]);
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [zip, setZip] = useState("");
+  const [city, setCity] = useState("");
+  const [editMode, setEditMode] = useState(false);
 
-    const [editMode, setEditMode] = useState(false);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:3001/api/profile?username=${profileId}`
+        );
+        const data = await response.json();
+        if (response.ok) {
+          setUsername(data.username || "");
+          setEmail(data.email || "");
+          setGender(data.gender || "");
+        } else {
+          console.error("Error fetching profile:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
 
+    fetchUserData();
+  }, [profileId]);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchCountries = async () => {
-        try {
+      try {
         const response = await fetch("https://restcountries.com/v3.1/all");
         const data = await response.json();
-        const countryNames = data.map((country: any) => country.name.common).sort();
+        const countryNames = data.map((c: any) => c.name.common).sort();
         setCountries(countryNames);
-        } catch (error) {
+      } catch (error) {
         console.error("Error fetching countries:", error);
-        }
+      }
     };
 
     fetchCountries();
-    }, []);
+  }, []);
 
+  const handleEditToggle = () => {
+    if (editMode) {
+      console.log("Saving profile...");
+    }
+    setEditMode(!editMode);
+  };
 
-
-    return (
-        <div className="flex flex-col">
-            <div className="grid grid-cols-4 gap-4">
-
-                <label className="flex justify-center items-center">Username:</label>
-                <TextField disabled={!editMode}/>
-
-                <label className="flex justify-center items-center">Email:</label>
-                <TextField disabled={!editMode}/>
-
-                <label className="flex justify-center items-center">Phone number:</label>
-                <TextField disabled={!editMode}/>
-
-                <label className="flex justify-center items-center">Gender:</label>
-                <Select 
-                    value={gender}
-                    disabled={!editMode}
-                    onChange={(e) => setGender(e.target.value)}
-                >
-                    <MenuItem value="Male">Male</MenuItem>
-                    <MenuItem value="Female">Female</MenuItem>
-                    <MenuItem value="Other">Other</MenuItem>
-                </Select>
-
-                <label className="flex justify-center items-center">Country:</label>
-                <Select 
-                    value={country}
-                    disabled={!editMode}
-                    onChange={(e) => setCountry(e.target.value)}
-                >
-                    {countries.map((countryName, index) => (
-                    <MenuItem key={index} value={countryName}>
-                        {countryName}
-                    </MenuItem>
-                    ))}
-                </Select>
-
-                <label className="flex justify-center items-center">City:</label>
-                <TextField disabled={!editMode}/>
-
-                <label className="flex justify-center items-center">Adress:</label>
-                <TextField disabled={!editMode}/>
-
-                <label className="flex justify-center items-center">Zip code:</label>
-                <TextField disabled={!editMode}/>
-            </div>
-            <Button variant="outlined" sx={{margin: 2, alignSelf: 'flex-end'}}
-                onClick={() => setEditMode((mode) => !mode)}
-            >
-                {editMode ? "Save" : "Edit"}
-            </Button>
-        </div>
-    )
+  return (
+    <div className="flex flex-col">
+      <div className="grid grid-cols-4 gap-4">
+        <label className="flex justify-center items-center">Username:</label>
+        <TextField value={username} disabled={!editMode} />
+        <label className="flex justify-center items-center">Email:</label>
+        <TextField value={email} disabled={!editMode} />
+        <label className="flex justify-center items-center">
+          Phone number:
+        </label>
+        <TextField
+          value={phone}
+          disabled={!editMode}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Gender:</label>
+        <Select
+          value={gender}
+          disabled={!editMode}
+          onChange={(e) => setGender(e.target.value as string)}
+        >
+          <MenuItem value="Male">Male</MenuItem>
+          <MenuItem value="Female">Female</MenuItem>
+          <MenuItem value="Other">Other</MenuItem>
+        </Select>
+        <label className="flex justify-center items-center">Country:</label>
+        <Select
+          value={country}
+          disabled={!editMode}
+          onChange={(e) => setCountry(e.target.value as string)}
+        >
+          {countries.map((countryName, index) => (
+            <MenuItem key={index} value={countryName}>
+              {countryName}
+            </MenuItem>
+          ))}
+        </Select>
+        <label className="flex justify-center items-center">City:</label>
+        <TextField
+          value={city}
+          disabled={!editMode}
+          onChange={(e) => setCity(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Address:</label>
+        <TextField
+          value={address}
+          disabled={!editMode}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Zip code:</label>
+        <TextField
+          value={zip}
+          disabled={!editMode}
+          onChange={(e) => setZip(e.target.value)}
+        />
+      </div>
+      <Button
+        variant="outlined"
+        sx={{ margin: 2, alignSelf: "flex-end" }}
+        onClick={handleEditToggle}
+      >
+        {editMode ? "Save" : "Edit"}
+      </Button>
+    </div>
+  );
 }
