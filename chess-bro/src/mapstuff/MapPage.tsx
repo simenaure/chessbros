@@ -2,6 +2,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 /*import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"*/
 import { useEffect } from "react";
+import MapMenu from "./MapMenu";
 
 
 
@@ -56,11 +57,12 @@ export default function MapPage() {
   }, []);
 
   return (
-   
-    
+    <div className="flex">
+      <MapMenu />
       <div id="map" 
-      style={{ height: "700px", width: "100%" }}
+        style={{ height: "700px", width: "80%" }}
       ></div>
+    </div>
    
   );
 }
