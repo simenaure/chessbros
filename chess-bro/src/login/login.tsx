@@ -1,17 +1,17 @@
 import React, { useState } from "react";
-import Popup from "../Components/popups"; // Adjust path as needed
+import Popup from "../Components/popups";
 import "./login.css";
 
 export interface LoginPageProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: any) => void;
+  onLoginSuccess?: (user: any) => void; // Mark as optional
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({
   isOpen,
   onClose,
-  onLoginSuccess,
+  onLoginSuccess = () => {}, // Default to a no-op function
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +34,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
       console.log("Full login response data:", data);
       if (response.ok) {
         alert("Logged in successfully!");
+        console.log("User data received:", data.user); // Debug log
         onLoginSuccess(data.user);
         onClose();
       } else {
