@@ -1,18 +1,49 @@
 import React, { useState } from "react";
-import Popup from "../Components/popups.tsx";
+import Popup from "../Components/popups";
 import "./login.css";
 
-interface LoginPageProps {
+export interface LoginPageProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess?: (user: any) => void; // Mark as optional
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose }) => {
+const LoginPage: React.FC<LoginPageProps> = ({
+  isOpen,
+  onClose,
+  onLoginSuccess = () => {}, // Default to a no-op function
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    console.log("Logging in with:", email, password);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please fill in both email and password");
+      return;
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    try {
+      const response = await fetch("http://localhost:3001/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+      console.log("Login response status:", response.status);
+      const data = await response.json();
+      console.log("Full login response data:", data);
+      if (response.ok) {
+        alert("Logged in successfully!");
+        console.log("User data received:", data.user); // Debug log
+        onLoginSuccess(data.user);
+        onClose();
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      alert("An error occurred during login. Please try again later.");
+    }
   };
 
   if (!isOpen) return null;
@@ -53,4 +84,5 @@ const LoginPage: React.FC<LoginPageProps> = ({ isOpen, onClose }) => {
     </Popup>
   );
 };
+
 export default LoginPage;

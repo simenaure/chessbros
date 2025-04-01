@@ -1,35 +1,61 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+// App.tsx
+import React, { useState } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+import NavBar from "./components/NavBar"; // Adjust path as needed
+import LoginSetup from "./login/login";
+import SignupSetup from "./login/signup";
+import ProfilePage from "./pages/profile/ProfilePage";
 import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0);
+const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+
+  const handleLoginSuccess = (user: any): void => {
+    console.log("Login successful, user:", user);
+    setCurrentUser(user);
+    setIsLoginOpen(false);
+  };
+
+  const handleLogout = (): void => {
+    console.log("Logging out...");
+    setCurrentUser(null);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div className="app-container">
+        {/* Pass currentUser and modal handlers to NavBar */}
+        <NavBar
+          currentUser={currentUser}
+          openLoginModal={() => setIsLoginOpen(true)}
+          openSignupModal={() => setIsSignupOpen(true)}
+          onLogout={handleLogout}
+        />
+
+        {/* Display the profile page if logged in */}
+        {currentUser ? (
+          <ProfilePage user={currentUser} />
+        ) : (
+          <div className="auth-container">
+            <p>Please log in to view your profile.</p>
+          </div>
+        )}
+
+        {/* Login & Signup Modals */}
+        <LoginSetup
+          isOpen={isLoginOpen}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+        <SignupSetup
+          isOpen={isSignupOpen}
+          onClose={() => setIsSignupOpen(false)}
+        />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </Router>
   );
-}
+};
 
 export default App;
