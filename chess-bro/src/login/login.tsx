@@ -76,7 +76,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
               placeholder="Password"
             />
           </div>
-          <button onClick={handleLogin} className="login-button">
+          <button
+            onClick={() => {
+              console.log("Login clicked");
+              handleLogin();
+            }}
+            className="login-button"
+          >
             Login
           </button>
         </div>
