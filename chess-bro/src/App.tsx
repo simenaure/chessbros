@@ -1,5 +1,5 @@
 // App.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -13,24 +13,36 @@ import Layout from "./pages/Layout";
 import Users from "./pages/databasepage";
 import MapPage from "./mapstuff/MapPage";
 import SignupSetup from "./login/signup";
-import LoginSetup from "./login/logintosignup"; // ✅ Correct!
+import LoginSetup from "./login/logintosignup";
 import { user } from "./login/user";
 
 function App() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<user | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+
+  // ✅ Load user from localStorage on first render
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoadingUser(false);
+  }, []);
 
   const handleLoginSuccess = (user: user) => {
     setCurrentUser(user);
+    localStorage.setItem("currentUser", JSON.stringify(user));
     setIsLoginOpen(false);
-    setIsLogin(true);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem("currentUser");
   };
+
+  const isLoggedIn = !!currentUser;
 
   const router = createBrowserRouter([
     {
@@ -51,11 +63,12 @@ function App() {
         },
         {
           path: "/profile/:profileId",
-          element: isLogin ? (
-            <ProfilePage {...currentUser} />
-          ) : (
-            <Navigate to="/" replace />
-          ),
+          element:
+            isLoggedIn && currentUser ? (
+              <ProfilePage {...currentUser} />
+            ) : (
+              <Navigate to="/" replace />
+            ),
         },
         {
           path: "/map",
@@ -71,7 +84,7 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
+      {!loadingUser && <RouterProvider router={router} />}
       <LoginSetup
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
