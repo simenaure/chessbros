@@ -14,15 +14,18 @@ import Users from "./pages/databasepage";
 import MapPage from "./mapstuff/MapPage";
 import SignupSetup from "./login/signup";
 import LoginSetup from "./login/logintosignup"; // ✅ Correct!
+import { user } from "./login/user";
 
 function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
 
-  const handleLoginSuccess = (user: any) => {
+  const handleLoginSuccess = (user: user) => {
     setCurrentUser(user);
     setIsLoginOpen(false);
+    setIsLogin(true);
   };
 
   const handleLogout = () => {
@@ -48,8 +51,8 @@ function App() {
         },
         {
           path: "/profile/:profileId",
-          element: currentUser ? (
-            <ProfilePage user={currentUser} />
+          element: isLogin ? (
+            <ProfilePage {...currentUser} />
           ) : (
             <Navigate to="/" replace />
           ),
