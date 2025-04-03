@@ -1,23 +1,20 @@
 import { Button, MenuItem, Select, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
+import { user } from "../../login/user";
 
-interface PersonalInfoProps {
-  profileId: string;
-}
+export default function PersonalInfo(userID: user) {
+  const [username, setUsername] = useState(userID.username);
+  const [email, setEmail] = useState(userID.email);
+  const [gender, setGender] = useState(userID.gender);
+  const [country, setCountry] = useState(userID.country);
+  const [address, setAddress] = useState(userID.address);
+  const [phone, setPhone] = useState(userID.phone);
+  const [city, setCity] = useState(userID.city);
 
-export default function PersonalInfo({ profileId }: PersonalInfoProps) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [gender, setGender] = useState("");
-  const [country, setCountry] = useState("");
-  const [countries, setCountries] = useState<string[]>([]);
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
-  const [zip, setZip] = useState("");
-  const [city, setCity] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [countries, setCountries] = useState<string[]>([]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchUserData = async () => {
       try {
         const response = await fetch(
@@ -37,7 +34,8 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
     };
 
     fetchUserData();
-  }, [profileId]);
+    
+  }, [profileId]); */
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -57,6 +55,7 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
   const handleEditToggle = () => {
     if (editMode) {
       console.log("Saving profile...");
+      console.log(userID);
     }
     setEditMode(!editMode);
   };
@@ -109,12 +108,6 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
           value={address}
           disabled={!editMode}
           onChange={(e) => setAddress(e.target.value)}
-        />
-        <label className="flex justify-center items-center">Zip code:</label>
-        <TextField
-          value={zip}
-          disabled={!editMode}
-          onChange={(e) => setZip(e.target.value)}
         />
       </div>
       <Button

@@ -1,61 +1,103 @@
 // App.tsx
-import React, { useState } from "react";
-import { BrowserRouter as Router } from "react-router-dom";
-import NavBar from "./components/NavBar"; // Adjust path as needed
-import LoginSetup from "./login/login";
-import SignupSetup from "./login/signup";
-import ProfilePage from "./pages/profile/ProfilePage";
-import "./App.css";
+import { useEffect, useState } from "react";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 
-const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+import FrontPage from "./Front_page/Front";
+import ProfilePage from "./pages/profile/ProfilePage";
+import ErrorPage from "./pages/ErrorPage";
+import Layout from "./pages/Layout";
+import Users from "./pages/databasepage";
+import MapPage from "./mapstuff/MapPage";
+import SignupSetup from "./login/signup";
+import LoginSetup from "./login/logintosignup";
+import { user } from "./login/user";
+
+function App() {
+  const [currentUser, setCurrentUser] = useState<user | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
 
-  const handleLoginSuccess = (user: any): void => {
-    console.log("Login successful, user:", user);
+  // ✅ Load user from localStorage on first render
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoadingUser(false);
+  }, []);
+
+  const handleLoginSuccess = (user: user) => {
     setCurrentUser(user);
+    localStorage.setItem("currentUser", JSON.stringify(user));
     setIsLoginOpen(false);
   };
 
-  const handleLogout = (): void => {
-    console.log("Logging out...");
+  const handleLogout = () => {
+    console.log("Clicked");
     setCurrentUser(null);
+    localStorage.removeItem("currentUser");
+    window.location.replace("/");
   };
 
-  return (
-    <Router>
-      <div className="app-container">
-        {/* Pass currentUser and modal handlers to NavBar */}
-        <NavBar
+  const isLoggedIn = !!currentUser;
+
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: (
+        <Layout
           currentUser={currentUser}
           openLoginModal={() => setIsLoginOpen(true)}
           openSignupModal={() => setIsSignupOpen(true)}
           onLogout={handleLogout}
         />
+      ),
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          path: "/",
+          element: <FrontPage />,
+        },
+        {
+          path: "/profile/:profileId",
+          element:
+            isLoggedIn && currentUser ? (
+              <ProfilePage {...currentUser} />
+            ) : (
+              <Navigate to="/" replace />
+            ),
+        },
+        {
+          path: "/map",
+          element: <MapPage />,
+        },
+        {
+          path: "/users",
+          element: <Users />,
+        },
+      ],
+    },
+  ]);
 
-        {/* Display the profile page if logged in */}
-        {currentUser ? (
-          <ProfilePage user={currentUser} />
-        ) : (
-          <div className="auth-container">
-            <p>Please log in to view your profile.</p>
-          </div>
-        )}
-
-        {/* Login & Signup Modals */}
-        <LoginSetup
-          isOpen={isLoginOpen}
-          onClose={() => setIsLoginOpen(false)}
-          onLoginSuccess={handleLoginSuccess}
-        />
-        <SignupSetup
-          isOpen={isSignupOpen}
-          onClose={() => setIsSignupOpen(false)}
-        />
-      </div>
-    </Router>
+  return (
+    <>
+      {!loadingUser && <RouterProvider router={router} />}
+      <LoginSetup
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+      <SignupSetup
+        isOpen={isSignupOpen}
+        onClose={() => setIsSignupOpen(false)}
+      />
+    </>
   );
-};
+}
 
 export default App;
