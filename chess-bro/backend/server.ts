@@ -1,7 +1,7 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import pg from "pg";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 import bcrypt from "bcrypt";
 
 dotenv.config();
@@ -20,58 +20,55 @@ const pool = new Pool({
 });
 
 // POST endpoint for signup
-app.post(
-  "/api/signup",
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const {
+app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
+  const {
+    username,
+    firstName,
+    lastName,
+    email,
+    gender,
+    password,
+    confirmPassword,
+  } = req.body;
+
+  if (
+    !username ||
+    !firstName ||
+    !lastName ||
+    !email ||
+    !gender ||
+    !password ||
+    !confirmPassword
+  ) {
+    res.status(400).json({ error: "Alle felt må fylles ut" });
+    return;
+  }
+  if (password !== confirmPassword) {
+    res.status(400).json({ error: "Passordene stemmer ikke overens" });
+    return;
+  }
+  try {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const insertQuery = `
+        INSERT INTO users (username, firstname, lastname, email, gender, password)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING username, firstname, lastname, email, gender;
+      `;
+    const result = await pool.query(insertQuery, [
       username,
       firstName,
       lastName,
       email,
       gender,
-      password,
-      confirmPassword,
-    } = req.body;
-
-    if (
-      !username ||
-      !firstName ||
-      !lastName ||
-      !email ||
-      !gender ||
-      !password ||
-      !confirmPassword
-    ) {
-      res.status(400).json({ error: "Alle felt må fylles ut" });
-      return;
-    }
-    if (password !== confirmPassword) {
-      res.status(400).json({ error: "Passordene stemmer ikke overens" });
-      return;
-    }
-    try {
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-      const insertQuery = `
-        INSERT INTO users (username, firstname, lastname, email, gender, password)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING username, firstname, lastname, email, gender;
-      `;
-      const result = await pool.query(insertQuery, [
-        username,
-        firstName,
-        lastName,
-        email,
-        gender,
-        hashedPassword,
-      ]);
-      res.status(201).json({ message: "User created", user: result.rows[0] });
-    } catch (error) {
-      console.error("Error during sign-up:", error);
-      res.status(500).json({ error: "Internal server error during sign-up" });
-    }
+      hashedPassword,
+    ]);
+    res.status(201).json({ message: "User created", user: result.rows[0] });
+  } catch (error) {
+    console.error("Error during sign-up:", error);
+    res.status(500).json({ error: "Internal server error during sign-up" });
   }
-);
+});
 
 // POST endpoint for login
 app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
@@ -112,7 +109,7 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
 });
 
 // Error handling middleware (for å returnere JSON i alle tilfeller)
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, res: Response) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal server error" });
 });

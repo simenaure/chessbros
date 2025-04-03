@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { user } from "../../login/user";
 
 export default function PersonalInfo(userID: user) {
-  const [username, setUsername] = useState(userID.username);
-  const [email, setEmail] = useState(userID.email);
+  const [username] = useState(userID.username);
+  const [email] = useState(userID.email);
+  const [firstname] = useState(userID.firstname);
+  const [lastname] = useState(userID.lastname);
   const [gender, setGender] = useState(userID.gender);
   const [country, setCountry] = useState(userID.country);
   const [address, setAddress] = useState(userID.address);
@@ -67,6 +69,10 @@ export default function PersonalInfo(userID: user) {
         <TextField value={username} disabled={!editMode} />
         <label className="flex justify-center items-center">Email:</label>
         <TextField value={email} disabled={!editMode} />
+        <label className="flex justify-center items-center">Firstname:</label>
+        <TextField value={firstname} disabled={!editMode} />
+        <label className="flex justify-center items-center">Lastname:</label>
+        <TextField value={lastname} disabled={!editMode} />
         <label className="flex justify-center items-center">
           Phone number:
         </label>
