@@ -38,8 +38,10 @@ function App() {
   };
 
   const handleLogout = () => {
+    console.log("Clicked");
     setCurrentUser(null);
     localStorage.removeItem("currentUser");
+    window.location.replace("/");
   };
 
   const isLoggedIn = !!currentUser;

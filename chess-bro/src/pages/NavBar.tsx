@@ -35,6 +35,7 @@ export default function NavBar({
             <button
               className="btn flex items-center px-4 py-2"
               onClick={onLogout}
+              color="red"
             >
               <FaSignOutAlt className="btn-icon" />
               Logout
