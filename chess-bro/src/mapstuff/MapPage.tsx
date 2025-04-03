@@ -1,5 +1,5 @@
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import L, { Map } from "leaflet";
 /*import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"*/
 import { useEffect } from "react";
 import MapMenu from "./MapMenu";
@@ -53,6 +53,9 @@ export default function MapPage() {
         attribution:
           '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
+
+
+      userPopup(map);
     }
   }, []);
 
@@ -67,5 +70,14 @@ export default function MapPage() {
   );
 }
 
+
+function userPopup(map : Map) {
+  var markerIcon = L.icon({
+    iconUrl: "chess-kopi.jpg",
+    iconSize: [80, 80]
+  });
+
+  L.marker([63.43, 10.4], {icon: markerIcon}).addTo(map);
+}
   
   
