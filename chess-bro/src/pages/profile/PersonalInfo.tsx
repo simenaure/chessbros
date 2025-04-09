@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { user } from "../../login/user";
 
 export default function PersonalInfo(userID: user) {
-  // Vi bruker separate state-variabler for å kunne endre verdiene
+  // Vi setter de opprinnelige state-verdiene fra props
   const [username, setUsername] = useState(userID.username);
   const [email, setEmail] = useState(userID.email);
   const [firstname, setFirstname] = useState(userID.firstname);
@@ -13,7 +13,6 @@ export default function PersonalInfo(userID: user) {
   const [phone, setPhone] = useState(userID.phone || "");
   const [address, setAddress] = useState(userID.address || "");
   const [city, setCity] = useState(userID.city || "");
-  // Dersom zip er en del av brukerobjektet:
   const [zip, setZip] = useState(userID.zip || "");
 
   const [editMode, setEditMode] = useState(false);
@@ -66,13 +65,29 @@ export default function PersonalInfo(userID: user) {
           const updatedData = await response.json();
           console.log("Profil oppdatert", updatedData);
           alert("Profil oppdatert!");
-          // Oppdater evt. state med data fra server (hvis du ønsker å reflektere eventuelle endringer)
+
+          // Oppdater state med nye verdier fra serveren
+          const updatedUser = updatedData.user;
+          setUsername(updatedUser.username);
+          setEmail(updatedUser.email);
+          setFirstname(updatedUser.firstname);
+          setLastname(updatedUser.lastname);
+          setGender(updatedUser.gender);
+          setCountry(updatedUser.country);
+          setPhone(updatedUser.phone);
+          setCity(updatedUser.city);
+          setAddress(updatedUser.address);
+          setZip(updatedUser.zip);
+
+          // Oppdater localStorage slik at oppdaterte data hentes ved refresh
+          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+          window.location.reload(); // Refresh siden for å oppdatere brukerdata
         }
       } catch (error) {
         console.error("Error updating profile:", error);
       }
     }
-    // Toggle editMode
+    // Toggle editMode uansett
     setEditMode(!editMode);
   };
 
@@ -145,7 +160,6 @@ export default function PersonalInfo(userID: user) {
           disabled={!editMode}
           onChange={(e) => setAddress(e.target.value)}
         />
-        {/* Eksempel på zip-kode */}
         <label className="flex justify-center items-center">Zip:</label>
         <TextField
           value={zip}

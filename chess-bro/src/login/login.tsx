@@ -13,21 +13,21 @@ const LoginPage: React.FC<LoginPageProps> = ({
   onClose,
   onLoginSuccess = () => {}, // Default to a no-op function
 }) => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please fill in both email and password");
+    if (!username || !password) {
+      alert("Please fill in both username and password");
       return;
     }
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = username.trim();
 
     try {
       const response = await fetch("http://localhost:3001/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+        body: JSON.stringify({ username: normalizedUsername, password }),
       });
       console.log("Login response status:", response.status);
       const data = await response.json();
@@ -37,6 +37,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
         console.log("User data received:", data.user); // Debug log
         onLoginSuccess(data.user);
         onClose();
+        window.location.reload();
       } else {
         alert("Error: " + data.error);
       }
@@ -57,13 +58,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
           </button>
           <h2 className="login-title">Login</h2>
           <div className="mb-4">
-            <label className="login-label">Email:</label>
+            <label className="login-label">Username:</label>
             <input
-              type="email"
+              type="text"
               className="login-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
             />
           </div>
           <div className="mb-4">

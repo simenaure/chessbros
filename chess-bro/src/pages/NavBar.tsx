@@ -20,14 +20,22 @@ export default function NavBar({
       <ul className="flex justify-between items-center w-full h-12 bg-gray-300 px-6">
         <div className="flex space-x-2">
           <NavBarButton page="Home" to="/" className="btn" />
-          {/* ✅ Use dynamic profile route */}
-          {currentUser && (
+
+          {/* Always show a Profile button.
+              If logged in, den er en Link til profil-siden;
+              hvis ikke, vises en disabled knapp med "Need to log in" */}
+          {currentUser ? (
             <NavBarButton
               page="Profile"
               to={`/profile/${currentUser.username}`}
               className="btn"
             />
+          ) : (
+            <button disabled className="btn flex items-center px-4 py-2">
+              Need to log in
+            </button>
           )}
+
           <NavBarButton page="Map" to="/map" className="btn" />
         </div>
         <div className="flex space-x-2">
@@ -35,7 +43,6 @@ export default function NavBar({
             <button
               className="btn flex items-center px-4 py-2"
               onClick={onLogout}
-              color="red"
             >
               <FaSignOutAlt className="btn-icon" />
               Logout
@@ -61,20 +68,16 @@ export default function NavBar({
   );
 }
 
-function NavBarButton({
-  page,
-  to,
-  className = "",
-}: {
+interface NavBarButtonProps {
   page: string;
   to: string;
   className?: string;
-}) {
+}
+
+// Vanlig knapp som er en Link, brukt når onClick ikke skal settes
+function NavBarButton({ page, to, className = "" }: NavBarButtonProps) {
   return (
-    <Link
-      to={to}
-      className={`btn flex items-center px-4 py-2 text-center ${className}`}
-    >
+    <Link to={to} className={`btn flex items-center px-4 py-2 ${className}`}>
       {page}
     </Link>
   );

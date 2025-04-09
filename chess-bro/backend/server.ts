@@ -61,18 +61,17 @@ app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// POST endpoint for login
+// POST endpoint for login (oppdatert til å bruke username)
 app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(400).json({ error: "Email and password required" });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    res.status(400).json({ error: "Username and password required" });
     return;
   }
   try {
-    const userQuery = "SELECT * FROM users WHERE LOWER(email) = $1";
-    const userResult = await pool.query(userQuery, [
-      email.trim().toLowerCase(),
-    ]);
+    // Bruk username her i stedet for email
+    const userQuery = "SELECT * FROM users WHERE username = $1";
+    const userResult = await pool.query(userQuery, [username]);
     if (userResult.rowCount === 0) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
@@ -91,6 +90,11 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
         lastname: user.lastname,
         email: user.email,
         gender: user.gender,
+        country: user.country,
+        phone: user.phone,
+        city: user.city,
+        address: user.address,
+        zip: user.zip,
       },
     });
   } catch (error) {
@@ -114,7 +118,6 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
     zip,
   } = req.body;
 
-  // Sjekk at vi har den nødvendige identifikatoren (username)
   if (!username) {
     res
       .status(400)
@@ -123,8 +126,6 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    // Siden username ikke endres, bruker vi den i WHERE-delen.
-    // Oppdater de øvrige feltene med nye verdier (hvis de sendes med) eller behold gamle verdier.
     const updateQuery = `
       UPDATE users
       SET 
@@ -165,8 +166,8 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// Error handling middleware (for å returnere JSON i alle tilfeller)
-app.use((err: any, res: Response) => {
+// Error handling middleware
+app.use((err: any, req: Request, res: Response, next: Function) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal server error" });
 });
