@@ -11,7 +11,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [gender, setGender] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,7 +20,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
       !username ||
       !firstName ||
       !lastName ||
-      !gender ||
       !email ||
       !password ||
       !confirmPassword

@@ -21,22 +21,14 @@ const pool = new Pool({
 
 // POST endpoint for signup
 app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
-  const {
-    username,
-    firstName,
-    lastName,
-    email,
-    gender,
-    password,
-    confirmPassword,
-  } = req.body;
+  const { username, firstName, lastName, email, password, confirmPassword } =
+    req.body;
 
   if (
     !username ||
     !firstName ||
     !lastName ||
     !email ||
-    !gender ||
     !password ||
     !confirmPassword
   ) {
@@ -51,16 +43,15 @@ app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const insertQuery = `
-        INSERT INTO users (username, firstname, lastname, email, gender, password)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING username, firstname, lastname, email, gender;
+        INSERT INTO users (username, firstname, lastname, email, password)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING username, firstname, lastname, email;
       `;
     const result = await pool.query(insertQuery, [
       username,
       firstName,
       lastName,
       email,
-      gender,
       hashedPassword,
     ]);
     res.status(201).json({ message: "User created", user: result.rows[0] });
@@ -105,6 +96,72 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ error: "Server error during login" });
+  }
+});
+
+// PUT endpoint for å oppdatere profilinformasjon
+app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
+  const {
+    username, // PRIMARY KEY, skal ikke endres
+    email,
+    firstname,
+    lastname,
+    gender,
+    country,
+    phone,
+    city,
+    address,
+    zip,
+  } = req.body;
+
+  // Sjekk at vi har den nødvendige identifikatoren (username)
+  if (!username) {
+    res
+      .status(400)
+      .json({ error: "Username (primary key) er påkrevd for oppdatering" });
+    return;
+  }
+
+  try {
+    // Siden username ikke endres, bruker vi den i WHERE-delen.
+    // Oppdater de øvrige feltene med nye verdier (hvis de sendes med) eller behold gamle verdier.
+    const updateQuery = `
+      UPDATE users
+      SET 
+        email = COALESCE($1, email),
+        firstname = COALESCE($2, firstname),
+        lastname = COALESCE($3, lastname),
+        gender = COALESCE($4, gender),
+        country = COALESCE($5, country),
+        phone = COALESCE($6, phone),
+        city = COALESCE($7, city),
+        address = COALESCE($8, address),
+        zip = COALESCE($9, zip)
+      WHERE username = $10
+      RETURNING username, email, firstname, lastname, gender, country, phone, city, address, zip;
+    `;
+    const values = [
+      email, // $1
+      firstname, // $2
+      lastname, // $3
+      gender, // $4
+      country, // $5
+      phone, // $6
+      city, // $7
+      address, // $8
+      zip, // $9
+      username, // $10 (WHERE clause)
+    ];
+
+    const result = await pool.query(updateQuery, values);
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Bruker ikke funnet" });
+      return;
+    }
+    res.json({ message: "Profil oppdatert", user: result.rows[0] });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Intern serverfeil" });
   }
 });
 

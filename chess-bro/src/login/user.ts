@@ -3,9 +3,9 @@ export type user = {
   email: string;
   firstname: string;
   lastname: string;
-  phone: string;
   gender: string;
   country: string;
+  phone: string;
   city: string;
   address: string;
   zip: string;
