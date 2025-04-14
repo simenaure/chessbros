@@ -43,10 +43,10 @@ app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const insertQuery = `
-        INSERT INTO users (username, firstname, lastname, email, password)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING username, firstname, lastname, email;
-      `;
+      INSERT INTO users (username, firstname, lastname, email, password)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING username, firstname, lastname, email;
+    `;
     const result = await pool.query(insertQuery, [
       username,
       firstName,
@@ -69,7 +69,6 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   try {
-    // Bruk username her i stedet for email
     const userQuery = "SELECT * FROM users WHERE username = $1";
     const userResult = await pool.query(userQuery, [username]);
     if (userResult.rowCount === 0) {
@@ -151,7 +150,7 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
       city, // $7
       address, // $8
       zip, // $9
-      username, // $10 (WHERE clause)
+      username, // $10
     ];
 
     const result = await pool.query(updateQuery, values);
@@ -163,6 +162,58 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error("Error updating profile:", error);
     res.status(500).json({ error: "Intern serverfeil" });
+  }
+});
+
+// GET endpoint for å hente chess stats
+app.get(
+  "/api/chess/:username",
+  async (req: Request, res: Response): Promise<void> => {
+    const { username } = req.params;
+    try {
+      const query = `SELECT * FROM chess WHERE username = $1;`;
+      const result = await pool.query(query, [username]);
+      if (result.rowCount === 0) {
+        res.json({ chessStats: null });
+      } else {
+        res.json({ chessStats: result.rows[0] });
+      }
+    } catch (error) {
+      console.error("Error fetching chess stats:", error);
+      res.status(500).json({ error: "Server error fetching chess stats" });
+    }
+  }
+);
+
+// PUT endpoint to insert or update chess stats
+app.put("/api/chess", async (req: Request, res: Response): Promise<void> => {
+  const { username, elo, wins, losses, draws, favoritetype } = req.body;
+
+  if (!username) {
+    res.status(400).json({ error: "Username is required." });
+    return;
+  }
+
+  try {
+    // Use UPSERT to insert new record or update existing one
+    const query = `
+      INSERT INTO chess (username, elo, wins, losses, draws, favoritetype)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (username)
+      DO UPDATE SET 
+        elo = EXCLUDED.elo, 
+        wins = EXCLUDED.wins, 
+        losses = EXCLUDED.losses, 
+        draws = EXCLUDED.draws, 
+        favoritetype = EXCLUDED.favoritetype
+      RETURNING *;
+    `;
+    const values = [username, elo, wins, losses, draws, favoritetype];
+    const result = await pool.query(query, values);
+    res.json({ message: "Chess stats saved", chessStats: result.rows[0] });
+  } catch (error) {
+    console.error("Error updating chess stats:", error);
+    res.status(500).json({ error: "Server error updating chess stats" });
   }
 });
 
