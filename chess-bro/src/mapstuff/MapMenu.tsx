@@ -1,6 +1,6 @@
 import { Button, FormControlLabel, Slider, Switch } from "@mui/material";
 import { useEffect, useState } from "react";
-import { drawCircle, searchProfiles, userLocation } from "./map";
+import { drawCircle, resetMap, searchProfiles, userLocation } from "./map";
 
 export default function MapMenu() {
 
@@ -11,9 +11,11 @@ export default function MapMenu() {
     
 
     useEffect(() => {
-        userLocation(whiteMode);
-        drawCircle(searchDistance);
-    }, [whiteMode, searchDistance])
+        if (!isHidden){
+            userLocation(whiteMode);
+            drawCircle(searchDistance);
+        }
+    }, [whiteMode, searchDistance, isHidden])
 
 
     return (
@@ -24,7 +26,10 @@ export default function MapMenu() {
                 control={<Switch 
                     color="success"
                     checked={!isHidden}
-                    onChange={() => setIsHidden(!isHidden)}
+                    onChange={() => {
+                        setIsHidden(!isHidden);
+                        resetMap();
+                    }}
                 />}
                 label={"Show me to other profiles"}
                 labelPlacement="start"

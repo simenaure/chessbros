@@ -9,6 +9,17 @@ export const mapRef: { current: L.Map | null } = { current: null };
 var userPos : LatLngTuple = [63.42 , 10.41]
 var searchRange : L.Circle | null = null;
 
+export function resetMap() {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    map.eachLayer((layer) => {
+        if (!(layer instanceof L.TileLayer)) {
+            map.removeLayer(layer);
+        }
+    })
+}
+
 export function searchProfiles() {
 
     //Alle brukere som er synlige for andre
