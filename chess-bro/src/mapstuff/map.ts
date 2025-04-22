@@ -20,7 +20,7 @@ export function resetMap() {
     })
 }
 
-export function searchProfiles() {
+export function searchProfiles(whiteMode : boolean) {
 
     //Alle brukere som er synlige for andre
     var activeUsers : user[] = [];
@@ -61,10 +61,6 @@ export function searchProfiles() {
     }
 
     //var currentUserMarker = L.marker([63.43, 10.4], {icon: userIcon}).addTo(map);
-
-
-
-    var whiteMode = true;
 
     for(var nbu of nearbyUsers) {
       userPopup(nbu, whiteMode);
