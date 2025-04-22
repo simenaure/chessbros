@@ -217,6 +217,62 @@ app.put("/api/chess", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// PUT endpoint for updating user location
+// PUT endpoint for updating user location
+app.put(
+  "/api/users/location",
+  async (req: Request, res: Response): Promise<void> => {
+    const { username, latitude, longitude } = req.body;
+
+    if (!username || latitude == null || longitude == null) {
+      res.status(400).json({ error: "username, latitude og longitude kreves" });
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE users
+         SET latitude = $2, longitude = $3
+         WHERE username = $1
+         RETURNING username, latitude, longitude;`,
+        [username, latitude, longitude]
+      );
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ error: "Bruker ikke funnet" });
+      } else {
+        res.json({ message: "Posisjon oppdatert", location: result.rows[0] });
+      }
+    } catch (err) {
+      console.error("Error updating location:", err);
+      res.status(500).json({ error: "Server error updating location" });
+    }
+  }
+);
+
+// GET endpoint for fetching all user locations + elo
+app.get(
+  "/api/users/locations",
+  async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          u.username, 
+          u.latitude, 
+          u.longitude,
+          c.elo
+        FROM users u
+        LEFT JOIN chess c ON u.username = c.username
+        WHERE u.latitude IS NOT NULL AND u.longitude IS NOT NULL;
+      `);
+      res.json({ locations: result.rows });
+    } catch (err) {
+      console.error("Error fetching locations:", err);
+      res.status(500).json({ error: "Server error fetching locations" });
+    }
+  }
+);
+
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: Function) => {
   console.error("Unhandled error:", err);
