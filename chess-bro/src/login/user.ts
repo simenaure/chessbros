@@ -7,4 +7,6 @@ export type user = {
   city: string;
   address: string;
   zip: string;
+  rating: number;
+  location: number[];
 };
