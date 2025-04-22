@@ -73,7 +73,7 @@ export default function MapMenu() {
                     sx={{width: 1/2, alignSelf: "center"}}
                     variant="contained"
                     color="success"
-                    onClick={searchProfiles(whiteMode)}
+                    onClick={() => searchProfiles(whiteMode)}
                 >
                     Search profiles
                 </Button>
