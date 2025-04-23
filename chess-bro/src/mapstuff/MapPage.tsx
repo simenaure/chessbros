@@ -6,11 +6,7 @@ import MapMenu from "./MapMenu";
 import { mapRef, userLocation } from "./map";
 import { Switch } from "@mui/material";
 
-
-
 export default function MapPage() {
-
-
   useEffect(() => {
     // Ensure the map is only initialized once
     if (!document.getElementById("map")?.hasChildNodes()) {
@@ -23,20 +19,13 @@ export default function MapPage() {
       }).addTo(map);
 
       mapRef.current = map;
-
     }
   }, []);
 
-
   return (
     <div className="flex">
-      <MapMenu/>
-      <div id="map" 
-        style={{ height: "400px", width: "80%" }}
-      ></div>
+      <MapMenu />
+      <div id="map" style={{ height: "700px", width: "100%" }}></div>
     </div>
-   
   );
-
-  
 }
