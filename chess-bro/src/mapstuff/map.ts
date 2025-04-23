@@ -1,5 +1,4 @@
 import L, { LatLngTuple } from "leaflet";
-import markerImage from "../assets/chess-kopi.jpg";
 import { user } from "../login/user";
 
 
@@ -85,7 +84,7 @@ export function userLocation(whiteMode : boolean) {
     const map = mapRef.current;
 
     var markerIcon = L.icon({
-        iconUrl: whiteMode ? "whiteking.png" : "blackking.png",
+        iconUrl: !whiteMode ? "whiteking.png" : "blackking.png",
         iconSize: [50, 50]
     });
 
