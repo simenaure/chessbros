@@ -84,7 +84,7 @@ export function userLocation(whiteMode : boolean) {
     const map = mapRef.current;
 
     var markerIcon = L.icon({
-        iconUrl: !whiteMode ? "whiteking.png" : "blackking.png",
+        iconUrl: whiteMode ? "whiteking.png" : "blackking.png",
         iconSize: [50, 50]
     });
 
@@ -101,24 +101,24 @@ function userPopup(user : user, whiteMode : boolean) {
     var blackImage;
 
     if(user.rating < 600){
-        whiteImage = "whitepawn.png";
-        blackImage = "blackpawn.png";
+        whiteImage = "blackpawn.png";
+        blackImage = "whitepawn.png";
     }
     else if(user.rating < 1200){
-        whiteImage = "whiteknight.png";
-        blackImage = "blackknight.png";
+        whiteImage = "blackknight.png";
+        blackImage = "whiteknight.png";
     }
     else if(user.rating < 1800){
-        whiteImage = "whitebishop.png";
-        blackImage = "blackbishop.png";
+        whiteImage = "blackbishop.png";
+        blackImage = "whitebishop.png";
     }
     else if(user.rating < 2400){
-        whiteImage = "whiterook.png";
-        blackImage = "blackrook.png";
+        whiteImage = "blackrook.png";
+        blackImage = "whiterook.png";
     }
     else{
-        whiteImage = "whitequeen.png";
-        blackImage = "blackqueen.png";
+        whiteImage = "blackqueen.png";
+        blackImage = "whitequeen.png";
     }
 
     var markerIcon = L.icon({
