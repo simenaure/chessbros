@@ -1,43 +1,22 @@
 import { Button, MenuItem, Select, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
+import { user } from "../../login/user";
 
-interface PersonalInfoProps {
-  profileId: string;
-}
+export default function PersonalInfo(userID: user) {
+  // Vi setter de opprinnelige state-verdiene fra props
+  const [username, setUsername] = useState(userID.username);
+  const [email, setEmail] = useState(userID.email);
+  const [firstname, setFirstname] = useState(userID.firstname);
+  const [lastname, setLastname] = useState(userID.lastname);
+  const [gender, setGender] = useState(userID.gender || "");
+  const [country, setCountry] = useState(userID.country || "");
+  const [phone, setPhone] = useState(userID.phone || "");
+  const [address, setAddress] = useState(userID.address || "");
+  const [city, setCity] = useState(userID.city || "");
+  const [zip, setZip] = useState(userID.zip || "");
 
-export default function PersonalInfo({ profileId }: PersonalInfoProps) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [gender, setGender] = useState("");
-  const [country, setCountry] = useState("");
-  const [countries, setCountries] = useState<string[]>([]);
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
-  const [zip, setZip] = useState("");
-  const [city, setCity] = useState("");
   const [editMode, setEditMode] = useState(false);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:3001/api/profile?username=${profileId}`
-        );
-        const data = await response.json();
-        if (response.ok) {
-          setUsername(data.username || "");
-          setEmail(data.email || "");
-          setGender(data.gender || "");
-        } else {
-          console.error("Error fetching profile:", data.error);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    fetchUserData();
-  }, [profileId]);
+  const [countries, setCountries] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -54,10 +33,61 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
     fetchCountries();
   }, []);
 
-  const handleEditToggle = () => {
+  // Funksjonen håndterer både toggling av editMode og lagring
+  const handleEditToggle = async () => {
     if (editMode) {
-      console.log("Saving profile...");
+      // Vi skal lagre endringene
+      try {
+        const response = await fetch("http://localhost:3001/api/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            email,
+            firstname,
+            lastname,
+            gender,
+            country,
+            phone,
+            city,
+            address,
+            zip,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Feil ved oppdatering:", errorData.error);
+          alert("Profil kunne ikke oppdateres");
+        } else {
+          const updatedData = await response.json();
+          console.log("Profil oppdatert", updatedData);
+          alert("Profil oppdatert!");
+
+          // Oppdater state med nye verdier fra serveren
+          const updatedUser = updatedData.user;
+          setUsername(updatedUser.username);
+          setEmail(updatedUser.email);
+          setFirstname(updatedUser.firstname);
+          setLastname(updatedUser.lastname);
+          setGender(updatedUser.gender);
+          setCountry(updatedUser.country);
+          setPhone(updatedUser.phone);
+          setCity(updatedUser.city);
+          setAddress(updatedUser.address);
+          setZip(updatedUser.zip);
+
+          // Oppdater localStorage slik at oppdaterte data hentes ved refresh
+          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+          window.location.reload(); // Refresh siden for å oppdatere brukerdata
+        }
+      } catch (error) {
+        console.error("Error updating profile:", error);
+      }
     }
+    // Toggle editMode uansett
     setEditMode(!editMode);
   };
 
@@ -65,20 +95,32 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
     <div className="flex flex-col">
       <div className="grid grid-cols-4 gap-4">
         <label className="flex justify-center items-center">Username:</label>
-        <TextField value={username} disabled={!editMode} />
-        <label className="flex justify-center items-center">Email:</label>
-        <TextField value={email} disabled={!editMode} />
-        <label className="flex justify-center items-center">
-          Phone number:
-        </label>
         <TextField
-          value={phone}
+          value={username}
           disabled={!editMode}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Email:</label>
+        <TextField
+          value={email}
+          disabled={!editMode}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Firstname:</label>
+        <TextField
+          value={firstname}
+          disabled={!editMode}
+          onChange={(e) => setFirstname(e.target.value)}
+        />
+        <label className="flex justify-center items-center">Lastname:</label>
+        <TextField
+          value={lastname}
+          disabled={!editMode}
+          onChange={(e) => setLastname(e.target.value)}
         />
         <label className="flex justify-center items-center">Gender:</label>
         <Select
-          value={gender}
+          value={gender || ""}
           disabled={!editMode}
           onChange={(e) => setGender(e.target.value as string)}
         >
@@ -98,6 +140,14 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
             </MenuItem>
           ))}
         </Select>
+        <label className="flex justify-center items-center">
+          Phone number:
+        </label>
+        <TextField
+          value={phone}
+          disabled={!editMode}
+          onChange={(e) => setPhone(e.target.value)}
+        />
         <label className="flex justify-center items-center">City:</label>
         <TextField
           value={city}
@@ -110,7 +160,7 @@ export default function PersonalInfo({ profileId }: PersonalInfoProps) {
           disabled={!editMode}
           onChange={(e) => setAddress(e.target.value)}
         />
-        <label className="flex justify-center items-center">Zip code:</label>
+        <label className="flex justify-center items-center">Zip:</label>
         <TextField
           value={zip}
           disabled={!editMode}
