@@ -3,35 +3,32 @@ import { user } from "../login/user";
 
 export const mapRef: { current: L.Map | null } = { current: null };
 
-// Trondheim center + default zoom
 const TRONDHEIM_CENTER: LatLngTuple = [63.4305, 10.3951];
 const DEFAULT_ZOOM = 13;
 
-// current user coords (loaded from localStorage)
 let userPos: LatLngTuple = [0, 0];
 let searchRange: L.Circle | null = null;
 
-/** Clears non-tile layers and recenters on Trondheim */
 export function resetMap() {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
   map.eachLayer((layer) => {
     if (!(layer instanceof L.TileLayer)) {
+      if ((map as any)._userMarker && layer === (map as any)._userMarker)
+        return;
       map.removeLayer(layer);
     }
   });
 
-  // recenter
   map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 }
 
-/** Draws the radius circle and recenters on Trondheim */
+/** Draws a search radius around the current user */
 export function drawCircle(radiusKm: number) {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  // recenter first
   map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 
   if (searchRange) {
@@ -41,12 +38,11 @@ export function drawCircle(radiusKm: number) {
   searchRange.addTo(map);
 }
 
-/** Shows draggable 📍 marker for current user + click-to-move */
+/** Displays the current user’s marker and enables moving it */
 export function userLocation(whiteMode: boolean) {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  // load saved coords
   const stored = localStorage.getItem("currentUser");
   if (stored) {
     const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
@@ -55,7 +51,6 @@ export function userLocation(whiteMode: boolean) {
     }
   }
 
-  // remove old click handlers
   map.off("click");
 
   const icon = L.divIcon({
@@ -64,8 +59,8 @@ export function userLocation(whiteMode: boolean) {
     iconAnchor: [15, 15],
   });
 
-  // add or move the marker
-  let myMarker = (mapRef.current as any)._userMarker as L.Marker | undefined;
+  let myMarker = (map as any)._userMarker as L.Marker | undefined;
+
   if (myMarker) {
     myMarker.setLatLng(userPos);
   } else {
@@ -73,28 +68,31 @@ export function userLocation(whiteMode: boolean) {
       .addTo(map)
       .bindPopup("Din posisjon")
       .openPopup();
-    (mapRef.current as any)._userMarker = myMarker;
+    (map as any)._userMarker = myMarker;
 
     myMarker.on("dragend", (e: L.LeafletEvent) => {
       const { lat, lng } = (e.target as L.Marker).getLatLng();
-      saveUserLocation(lat, lng);
+      saveUserLocation(lat, lng, () => {
+        userPos = [lat, lng];
+        drawCircle(1); // or store last radius value
+      });
     });
   }
 
-  // click anywhere to move & save
   map.on("click", (e: L.LeafletMouseEvent) => {
     const { lat, lng } = e.latlng;
     myMarker!.setLatLng([lat, lng]).openPopup();
-    saveUserLocation(lat, lng);
+    saveUserLocation(lat, lng, () => {
+      userPos = [lat, lng];
+      drawCircle(1);
+    });
   });
 }
 
-/** Persist to backend + update localStorage */
-function saveUserLocation(lat: number, lng: number) {
+function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
   const stored = localStorage.getItem("currentUser");
   if (!stored) return;
   const cu = JSON.parse(stored);
-
   fetch("http://localhost:3001/api/users/location", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -109,14 +107,12 @@ function saveUserLocation(lat: number, lng: number) {
       cu.latitude = lat;
       cu.longitude = lng;
       localStorage.setItem("currentUser", JSON.stringify(cu));
+      if (onUpdate) onUpdate();
     })
     .catch(console.error);
 }
 
-/**
- * Fetch & plot other users, filtering by ELO-range & distance,
- * always recenters on Trondheim first.
- */
+/** Loads other users and shows them as piece markers */
 export function searchProfiles(
   whiteMode: boolean,
   ratingRange: [number, number],
@@ -125,22 +121,24 @@ export function searchProfiles(
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  // clear & recenter
   resetMap();
-
-  // draw radius (which also recovers center)
   drawCircle(distanceKm);
+  userLocation(whiteMode); // restore your own 📍 marker
 
-  // refresh userPos if changed
   const stored = localStorage.getItem("currentUser");
+  let me = "";
   if (stored) {
-    const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
+    const cu = JSON.parse(stored) as {
+      username: string;
+      latitude?: number;
+      longitude?: number;
+    };
     if (cu.latitude != null && cu.longitude != null) {
       userPos = [cu.latitude, cu.longitude];
     }
+    me = cu.username;
   }
 
-  // fetch and plot
   fetch("http://localhost:3001/api/users/locations")
     .then((res) => res.json())
     .then(
@@ -153,8 +151,11 @@ export function searchProfiles(
         }[];
       }) => {
         data.locations.forEach((u) => {
+          if (u.username === me) return;
+
           const elo = u.elo ?? 0;
           if (elo < ratingRange[0] || elo > ratingRange[1]) return;
+
           const distKm =
             map.distance(userPos, [u.latitude, u.longitude]) / 1000;
           if (distKm > distanceKm) return;
@@ -174,7 +175,6 @@ export function searchProfiles(
     .catch(console.error);
 }
 
-// marker + popup for other users
 function userPopup(
   u: { username: string; rating: number; location: LatLngTuple },
   whiteMode: boolean,
