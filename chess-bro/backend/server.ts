@@ -274,7 +274,7 @@ app.get(
 );
 
 // Error handling middleware
-app.use((err: any, req: Request, res: Response, next: Function) => {
+app.use((err: any, res: Response) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal server error" });
 });

@@ -1,5 +1,4 @@
 import L, { LatLngTuple } from "leaflet";
-import { user } from "../login/user";
 
 export const mapRef: { current: L.Map | null } = { current: null };
 
@@ -39,7 +38,7 @@ export function drawCircle(radiusKm: number) {
 }
 
 /** Displays the current user’s marker and enables moving it */
-export function userLocation(whiteMode: boolean) {
+export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
@@ -123,7 +122,7 @@ export function searchProfiles(
 
   resetMap();
   drawCircle(distanceKm);
-  userLocation(whiteMode); // restore your own 📍 marker
+  userLocation(); // restore your own 📍 marker
 
   const stored = localStorage.getItem("currentUser");
   let me = "";

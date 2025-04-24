@@ -1,10 +1,9 @@
 import "leaflet/dist/leaflet.css";
-import L, { Map } from "leaflet";
+import L from "leaflet";
 /*import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"*/
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import MapMenu from "./MapMenu";
-import { mapRef, userLocation } from "./map";
-import { Switch } from "@mui/material";
+import { mapRef } from "./map";
 
 export default function MapPage() {
   useEffect(() => {
