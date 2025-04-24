@@ -184,3 +184,9 @@ export function exitChallengeView(){
     resetMap();
     userLocation(white);
 }
+
+export function suitableLocations(player : user, opponent : user){
+    //Hente inn spillesteder i nærheten av spillerne
+    const locations : number[] = [1, 2, 3];
+    return locations;
+}
