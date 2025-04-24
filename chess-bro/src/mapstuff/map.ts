@@ -1,12 +1,19 @@
 import L, { LatLngTuple } from "leaflet";
 import { user } from "../login/user";
 
-
 export const mapRef: { current: L.Map | null } = { current: null };
+export const challengeModeRef : {
+    setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
+    chal?: boolean;
+    selectedUser?: user;
+} = {};
+
 
 //Trenger funksjon som henter inn sanntidsposisjon til bruker
 var userPos : LatLngTuple = [63.42 , 10.41]
 var searchRange : L.Circle | null = null;
+
+var white : boolean = true
 
 export function resetMap() {
     if (!mapRef.current) return;
@@ -34,7 +41,7 @@ export function searchProfiles(whiteMode : boolean) {
           city: "New York",
           address: "123 Main St",
           zip: "10001",
-          rating: 4.8,
+          rating: 1004.8,
           location: [63.42, 10.4]
         },
         {
@@ -97,6 +104,8 @@ function userPopup(user : user, whiteMode : boolean) {
     if(!mapRef.current) return;
     const map = mapRef.current;
 
+    white = whiteMode;
+
     var whiteImage;
     var blackImage;
 
@@ -129,15 +138,49 @@ function userPopup(user : user, whiteMode : boolean) {
     var myMarker = L.marker([user.location[0], user.location[1]], {icon: markerIcon});
     myMarker.addTo(map)
 
-    var popupContent = `<div>
-        <h1>${user.username}</h1>
-        <p>${user.rating}</p>
-        <button style="background-color: lightblue;" onclick=${sendChallenge}>Send challenge</button>
-    </div>`;
-    myMarker.bindPopup(popupContent);
+    if (!challengeModeRef.chal) {
+        const popupContent = document.createElement("div");
+
+        const title = document.createElement("h1");
+        title.textContent = user.username;
+    
+        const rating = document.createElement("p");
+        rating.textContent = user.rating.toString();
+    
+        const button = document.createElement("button");
+        button.textContent = "Send challenge";
+        button.style.backgroundColor = "lightblue";
+        button.onclick = () => challengeView(user);
+    
+        popupContent.appendChild(title);
+        popupContent.appendChild(rating);
+        popupContent.appendChild(button);
+    
+        myMarker.bindPopup(popupContent);
+    }
 }
 
 
-function sendChallenge(){
-    return;
+function challengeView(opponent : user){
+    if (challengeModeRef.setChallengeMode) {
+        challengeModeRef.selectedUser = opponent;
+        challengeModeRef.setChallengeMode(prev => {
+          const updated = !prev;
+          challengeModeRef.chal = !prev;
+          challengeModeRef.selectedUser = opponent;
+          return updated;
+        });
+    }
+    resetMap();
+    userLocation(white);
+    userPopup(opponent, white);
+}
+
+export function exitChallengeView(){
+    if (challengeModeRef.setChallengeMode) {
+        challengeModeRef.setChallengeMode(() => false);
+        challengeModeRef.chal = false;
+    }
+    resetMap();
+    userLocation(white);
 }

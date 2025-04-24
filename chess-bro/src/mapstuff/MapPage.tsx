@@ -3,13 +3,15 @@ import L, { Map } from "leaflet";
 /*import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"*/
 import { useEffect, useState } from "react";
 import MapMenu from "./MapMenu";
-import { mapRef, userLocation } from "./map";
+import { challengeModeRef, mapRef, userLocation } from "./map";
 import { Switch } from "@mui/material";
-
+import ChallengeMenu from "./ChallengeMenu";
+import React from "react";
 
 
 export default function MapPage() {
 
+  const [challengeMode, setChallengeMode] = useState(false);
 
   useEffect(() => {
     // Ensure the map is only initialized once
@@ -27,16 +29,22 @@ export default function MapPage() {
     }
   }, []);
 
+  useEffect(() => {
+    challengeModeRef.setChallengeMode = setChallengeMode;
+  }, []);
+
+  useEffect(() => {
+    challengeModeRef.chal = challengeMode;
+  }, [challengeMode]);
 
   return (
     <div className="flex">
-      <MapMenu/>
+      {!challengeMode ? <MapMenu/> : <ChallengeMenu />}
       <div id="map" 
-        style={{ height: "400px", width: "80%" }}
+        style={{ height: "800px", width: "80%" }}
       ></div>
     </div>
    
   );
-
   
 }
