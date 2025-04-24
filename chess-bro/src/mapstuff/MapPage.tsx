@@ -1,13 +1,10 @@
 import "leaflet/dist/leaflet.css";
-import L, { Map } from "leaflet";
+import L from "leaflet";
 /*import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"*/
 import { useEffect, useState } from "react";
 import MapMenu from "./MapMenu";
-import { challengeModeRef, mapRef, userLocation } from "./map";
-import { Switch } from "@mui/material";
+import { challengeModeRef, mapRef } from "./map";
 import ChallengeMenu from "./ChallengeMenu";
-import React from "react";
-
 
 export default function MapPage() {
 
@@ -25,7 +22,6 @@ export default function MapPage() {
       }).addTo(map);
 
       mapRef.current = map;
-
     }
   }, []);
 
@@ -39,12 +35,11 @@ export default function MapPage() {
 
   return (
     <div className="flex">
-      {!challengeMode ? <MapMenu/> : <ChallengeMenu />}
+      {!challengeModeRef.chal ? <MapMenu/> : <ChallengeMenu />}
       <div id="map" 
         style={{ height: "800px", width: "80%" }}
       ></div>
     </div>
-   
   );
   
 }

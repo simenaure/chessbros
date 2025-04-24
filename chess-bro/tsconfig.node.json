@@ -14,5 +14,5 @@
     "noUncheckedSideEffectImports": true,
     "outDir": "dist"
   },
-  "include": ["vite.config.ts", "server.ts"]
+  "include": ["vite.config.ts", "backend/server.ts"]
 }

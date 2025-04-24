@@ -1,6 +1,6 @@
-import { Button } from "@mui/material";
 import PersonalInfo from "./PersonalInfo";
 import { user } from "../../login/user";
+import ChessProfile from "./ChessProfile";
 
 export default function ProfilePage(userID: user) {
   if (!userID) {
@@ -16,6 +16,7 @@ export default function ProfilePage(userID: user) {
         <h1 className="text-2xl font-bold">Your profile: {userID.username}</h1>
       </div>
       <PersonalInfo {...userID} />
+      <ChessProfile username={userID.username} />
     </div>
   );
 }

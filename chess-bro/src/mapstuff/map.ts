@@ -1,6 +1,7 @@
 import L, { LatLngTuple } from "leaflet";
 import { user } from "../login/user";
 
+
 export const mapRef: { current: L.Map | null } = { current: null };
 export const challengeModeRef : {
     setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -9,157 +10,206 @@ export const challengeModeRef : {
 } = {};
 
 
-//Trenger funksjon som henter inn sanntidsposisjon til bruker
-var userPos : LatLngTuple = [63.42 , 10.41]
-var searchRange : L.Circle | null = null;
+const TRONDHEIM_CENTER: LatLngTuple = [63.4305, 10.3951];
+const DEFAULT_ZOOM = 13;
 
-var white : boolean = true
+let userPos: LatLngTuple = [0, 0];
+let searchRange: L.Circle | null = null;
 
 export function resetMap() {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  if (!mapRef.current) return;
+  const map = mapRef.current;
 
-    map.eachLayer((layer) => {
-        if (!(layer instanceof L.TileLayer)) {
-            map.removeLayer(layer);
-        }
+  map.eachLayer((layer) => {
+    if (!(layer instanceof L.TileLayer)) {
+      if ((map as any)._userMarker && layer === (map as any)._userMarker)
+        return;
+      map.removeLayer(layer);
+    }
+  });
+
+  map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+}
+
+/** Draws a search radius around the current user */
+export function drawCircle(radiusKm: number) {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
+
+  map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+
+  if (searchRange) {
+    map.removeLayer(searchRange);
+  }
+  searchRange = L.circle(userPos, { radius: radiusKm * 1000 });
+  searchRange.addTo(map);
+}
+
+/** Displays the current user’s marker and enables moving it */
+export function userLocation() {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
+
+  const stored = localStorage.getItem("currentUser");
+  if (stored) {
+    const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
+    if (cu.latitude != null && cu.longitude != null) {
+      userPos = [cu.latitude, cu.longitude];
+    }
+  }
+
+  map.off("click");
+
+  const icon = L.divIcon({
+    html: `<div style="font-size:26px;">📍</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+
+  let myMarker = (map as any)._userMarker as L.Marker | undefined;
+
+  if (myMarker) {
+    myMarker.setLatLng(userPos);
+  } else {
+    myMarker = L.marker(userPos, { icon, draggable: true })
+      .addTo(map)
+      .bindPopup("Din posisjon")
+      .openPopup();
+    (map as any)._userMarker = myMarker;
+
+    myMarker.on("dragend", (e: L.LeafletEvent) => {
+      const { lat, lng } = (e.target as L.Marker).getLatLng();
+      saveUserLocation(lat, lng, () => {
+        userPos = [lat, lng];
+        drawCircle(1); // or store last radius value
+      });
+    });
+  }
+
+  map.on("click", (e: L.LeafletMouseEvent) => {
+    const { lat, lng } = e.latlng;
+    myMarker!.setLatLng([lat, lng]).openPopup();
+    saveUserLocation(lat, lng, () => {
+      userPos = [lat, lng];
+      drawCircle(1);
+    });
+  });
+}
+
+function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
+  const stored = localStorage.getItem("currentUser");
+  if (!stored) return;
+  const cu = JSON.parse(stored);
+  fetch("http://localhost:3001/api/users/location", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: cu.username,
+      latitude: lat,
+      longitude: lng,
+    }),
+  })
+    .then((res) => res.json())
+    .then(() => {
+      cu.latitude = lat;
+      cu.longitude = lng;
+      localStorage.setItem("currentUser", JSON.stringify(cu));
+      if (onUpdate) onUpdate();
     })
+    .catch(console.error);
 }
 
-export function searchProfiles(whiteMode : boolean) {
+/** Loads other users and shows them as piece markers */
+export function searchProfiles(
+  whiteMode: boolean,
+  ratingRange: [number, number],
+  distanceKm: number
+) {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
 
-    //Alle brukere som er synlige for andre
-    var activeUsers : user[] = [];
+  resetMap();
+  drawCircle(distanceKm);
+  userLocation(); // restore your own 📍 marker
 
-    const dummyUsers: user[] = [
-        {
-          username: "john_doe",
-          email: "john.doe@example.com",
-          phone: "+1234567890",
-          gender: "Male",
-          country: "USA",
-          city: "New York",
-          address: "123 Main St",
-          zip: "10001",
-          rating: 1004.8,
-          location: [63.42, 10.4]
-        },
-        {
-          username: "jane_smith",
-          email: "jane.smith@example.com",
-          phone: "+0987654321",
-          gender: "Female",
-          country: "Canada",
-          city: "Toronto",
-          address: "456 Queen St",
-          zip: "M5V 2B2",
-          rating: 4.6,
-          location: [63.43, 10.41]
-        },
-      ];
-
-
-    //Brukere som tilfredstiller parameterene fra MapMenu
-    var nearbyUsers : user[] = dummyUsers;
-
-    for(var acu of activeUsers) {
-        //Logikk for å filtrere på avstand/rating
+  const stored = localStorage.getItem("currentUser");
+  let me = "";
+  if (stored) {
+    const cu = JSON.parse(stored) as {
+      username: string;
+      latitude?: number;
+      longitude?: number;
+    };
+    if (cu.latitude != null && cu.longitude != null) {
+      userPos = [cu.latitude, cu.longitude];
     }
+    me = cu.username;
+  }
 
-    //var currentUserMarker = L.marker([63.43, 10.4], {icon: userIcon}).addTo(map);
+  fetch("http://localhost:3001/api/users/locations")
+    .then((res) => res.json())
+    .then(
+      (data: {
+        locations: {
+          username: string;
+          latitude: number;
+          longitude: number;
+          elo: number | null;
+        }[];
+      }) => {
+        data.locations.forEach((u) => {
+          if (u.username === me) return;
 
-    for(var nbu of nearbyUsers) {
-      userPopup(nbu, whiteMode);
-    }
+          const elo = u.elo ?? 0;
+          if (elo < ratingRange[0] || elo > ratingRange[1]) return;
+
+          const distKm =
+            map.distance(userPos, [u.latitude, u.longitude]) / 1000;
+          if (distKm > distanceKm) return;
+
+          userPopup(
+            {
+              username: u.username,
+              rating: elo,
+              location: [u.latitude, u.longitude],
+            },
+            whiteMode,
+            distKm
+          );
+        });
+      }
+    )
+    .catch(console.error);
 }
 
-export function drawCircle(radius : number) {
-    if(!mapRef.current) return;
-    const map = mapRef.current;
+function userPopup(
+  u: { username: string; rating: number; location: LatLngTuple },
+  whiteMode: boolean,
+  distKm: number
+) {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
 
-    if (searchRange) {
-        map.removeLayer(searchRange);
-    }
+  let img: string;
+  if (u.rating < 500) img = "pawn.png";
+  else if (u.rating < 800) img = "bishop.png";
+  else if (u.rating < 1000) img = "knight.png";
+  else if (u.rating < 1500) img = "rook.png";
+  else if (u.rating < 2000) img = "queen.png";
+  else img = "king.png";
 
-    searchRange = L.circle(userPos, {radius: radius*1000});
-    searchRange.addTo(map);
+  const icon = L.icon({
+    iconUrl: whiteMode ? `white${img}` : `black${img}`,
+    iconSize: [30, 30],
+  });
+
+  const marker = L.marker(u.location, { icon }).addTo(map);
+  marker.bindPopup(
+    `<b>${u.username}</b><br/>
+     ELO: ${u.rating}<br/>
+     Avstand: ${distKm.toFixed(2)} km`
+  );
 }
-
-export function userLocation(whiteMode : boolean) {
-
-    if(!mapRef.current) return;
-    const map = mapRef.current;
-
-    var markerIcon = L.icon({
-        iconUrl: whiteMode ? "whiteking.png" : "blackking.png",
-        iconSize: [50, 50]
-    });
-
-    var myMarker = L.marker(userPos, {icon: markerIcon});
-    myMarker.addTo(map)
-}
-
-function userPopup(user : user, whiteMode : boolean) {
-
-    if(!mapRef.current) return;
-    const map = mapRef.current;
-
-    white = whiteMode;
-
-    var whiteImage;
-    var blackImage;
-
-    if(user.rating < 600){
-        whiteImage = "blackpawn.png";
-        blackImage = "whitepawn.png";
-    }
-    else if(user.rating < 1200){
-        whiteImage = "blackknight.png";
-        blackImage = "whiteknight.png";
-    }
-    else if(user.rating < 1800){
-        whiteImage = "blackbishop.png";
-        blackImage = "whitebishop.png";
-    }
-    else if(user.rating < 2400){
-        whiteImage = "blackrook.png";
-        blackImage = "whiterook.png";
-    }
-    else{
-        whiteImage = "blackqueen.png";
-        blackImage = "whitequeen.png";
-    }
-
-    var markerIcon = L.icon({
-        iconUrl: whiteMode ? whiteImage : blackImage,
-        iconSize: [30, 30]
-    });
-
-    var myMarker = L.marker([user.location[0], user.location[1]], {icon: markerIcon});
-    myMarker.addTo(map)
-
-    if (!challengeModeRef.chal) {
-        const popupContent = document.createElement("div");
-
-        const title = document.createElement("h1");
-        title.textContent = user.username;
-    
-        const rating = document.createElement("p");
-        rating.textContent = user.rating.toString();
-    
-        const button = document.createElement("button");
-        button.textContent = "Send challenge";
-        button.style.backgroundColor = "lightblue";
-        button.onclick = () => challengeView(user);
-    
-        popupContent.appendChild(title);
-        popupContent.appendChild(rating);
-        popupContent.appendChild(button);
-    
-        myMarker.bindPopup(popupContent);
-    }
-}
-
 
 function challengeView(opponent : user){
     if (challengeModeRef.setChallengeMode) {
@@ -172,8 +222,8 @@ function challengeView(opponent : user){
         });
     }
     resetMap();
-    userLocation(white);
-    userPopup(opponent, white);
+    //userLocation(white);
+    //userPopup(opponent, white);
 }
 
 export function exitChallengeView(){
@@ -182,7 +232,7 @@ export function exitChallengeView(){
         challengeModeRef.chal = false;
     }
     resetMap();
-    userLocation(white);
+    //userLocation(white);
 }
 
 export function suitableLocations(player : user, opponent : user){
