@@ -1,20 +1,19 @@
 import L, { LatLngTuple } from "leaflet";
 import { user } from "../login/user";
 
-
 export const mapRef: { current: L.Map | null } = { current: null };
-export const challengeModeRef : {
-    setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
-    chal?: boolean;
-    selectedUser?: user;
+export const challengeModeRef: {
+  setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
+  chal?: boolean;
+  selectedUser?: user;
 } = {};
-
 
 const TRONDHEIM_CENTER: LatLngTuple = [63.4305, 10.3951];
 const DEFAULT_ZOOM = 13;
 
 let userPos: LatLngTuple = [0, 0];
 let searchRange: L.Circle | null = null;
+let drawnRoutes: L.Polyline[] = [];
 
 export function resetMap() {
   if (!mapRef.current) return;
@@ -28,10 +27,12 @@ export function resetMap() {
     }
   });
 
+  drawnRoutes.forEach((line) => map.removeLayer(line));
+  drawnRoutes = [];
+
   map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 }
 
-/** Draws a search radius around the current user */
 export function drawCircle(radiusKm: number) {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -45,7 +46,6 @@ export function drawCircle(radiusKm: number) {
   searchRange.addTo(map);
 }
 
-/** Displays the current user’s marker and enables moving it */
 export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -81,7 +81,7 @@ export function userLocation() {
       const { lat, lng } = (e.target as L.Marker).getLatLng();
       saveUserLocation(lat, lng, () => {
         userPos = [lat, lng];
-        drawCircle(1); // or store last radius value
+        drawCircle(1);
       });
     });
   }
@@ -119,7 +119,6 @@ function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
     .catch(console.error);
 }
 
-/** Loads other users and shows them as piece markers */
 export function searchProfiles(
   whiteMode: boolean,
   ratingRange: [number, number],
@@ -130,7 +129,7 @@ export function searchProfiles(
 
   resetMap();
   drawCircle(distanceKm);
-  userLocation(); // restore your own 📍 marker
+  userLocation();
 
   const stored = localStorage.getItem("currentUser");
   let me = "";
@@ -159,7 +158,6 @@ export function searchProfiles(
       }) => {
         data.locations.forEach((u) => {
           if (u.username === me) return;
-
           const elo = u.elo ?? 0;
           if (elo < ratingRange[0] || elo > ratingRange[1]) return;
 
@@ -204,39 +202,49 @@ function userPopup(
   });
 
   const marker = L.marker(u.location, { icon }).addTo(map);
-  marker.bindPopup(
-    `<b>${u.username}</b><br/>
-     ELO: ${u.rating}<br/>
-     Avstand: ${distKm.toFixed(2)} km`
-  );
+
+  const popupDiv = document.createElement("div");
+  const heading = document.createElement("h1");
+  heading.textContent = u.username;
+
+  const ratingP = document.createElement("p");
+  ratingP.textContent = `ELO: ${u.rating}`;
+
+  const button = document.createElement("button");
+  button.textContent = "Send challenge";
+  button.style.backgroundColor = "lightblue";
+  button.onclick = () => challengeView(u);
+
+  popupDiv.appendChild(heading);
+  popupDiv.appendChild(ratingP);
+  popupDiv.appendChild(button);
+
+  marker.bindPopup(popupDiv);
 }
 
-function challengeView(opponent : user){
-    if (challengeModeRef.setChallengeMode) {
-        challengeModeRef.selectedUser = opponent;
-        challengeModeRef.setChallengeMode(prev => {
-          const updated = !prev;
-          challengeModeRef.chal = !prev;
-          challengeModeRef.selectedUser = opponent;
-          return updated;
-        });
-    }
-    resetMap();
-    //userLocation(white);
-    //userPopup(opponent, white);
+function challengeView(opponent: any) {
+  if (challengeModeRef.setChallengeMode) {
+    challengeModeRef.selectedUser = opponent;
+    challengeModeRef.setChallengeMode((prev) => {
+      challengeModeRef.chal = !prev;
+      return !prev;
+    });
+  }
+
+  if (mapRef.current) {
+    mapRef.current.closePopup();
+  }
 }
 
-export function exitChallengeView(){
-    if (challengeModeRef.setChallengeMode) {
-        challengeModeRef.setChallengeMode(() => false);
-        challengeModeRef.chal = false;
-    }
-    resetMap();
-    //userLocation(white);
+export function exitChallengeView() {
+  if (challengeModeRef.setChallengeMode) {
+    challengeModeRef.setChallengeMode(() => false);
+    challengeModeRef.chal = false;
+  }
+  resetMap();
 }
 
-export function suitableLocations(player : user, opponent : user){
-    //Hente inn spillesteder i nærheten av spillerne
-    const locations : number[] = [1, 2, 3];
-    return locations;
+export function suitableLocations(player: user, opponent: user) {
+  const locations: number[] = [1, 2, 3];
+  return locations;
 }
