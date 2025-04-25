@@ -1,5 +1,17 @@
 import L, { LatLngTuple } from "leaflet";
 import { user } from "../login/user";
+//import { useEffect, useRef } from "react";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Configure default Leaflet marker icon
+delete (L.Icon.Default as any).prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 export const mapRef: { current: L.Map | null } = { current: null };
 export const challengeModeRef: {
@@ -45,78 +57,77 @@ export function drawCircle(radiusKm: number) {
   searchRange = L.circle(userPos, { radius: radiusKm * 1000 });
   searchRange.addTo(map);
 }
-
+/*
 export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
+  // Read stored coordinates
   const stored = localStorage.getItem("currentUser");
   if (stored) {
     const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
     if (cu.latitude != null && cu.longitude != null) {
       userPos = [cu.latitude, cu.longitude];
     }
-  }
+  }*/
+
+export function userLocation() {
+      if (!mapRef.current) return;
+      const map = mapRef.current;
+    
+      // Read stored coordinates
+      const stored = localStorage.getItem("currentUser");
+      if (stored) {
+        const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
+        if (cu.latitude != null && cu.longitude != null) {
+          userPos = [cu.latitude, cu.longitude];
+        }
+      }
 
   map.off("click");
 
-  const icon = L.divIcon({
-    html: `<div style="font-size:26px;">📍</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
-
-  let myMarker = (map as any)._userMarker as L.Marker | undefined;
-
-  if (myMarker) {
-    myMarker.setLatLng(userPos);
+  // Use default blue pin icon
+  const icon = new L.Icon.Default();
+  let marker = (map as any)._userMarker as L.Marker | undefined;
+  if (marker) {
+    marker.setLatLng(userPos);
   } else {
-    myMarker = L.marker(userPos, { icon, draggable: true })
+    marker = L.marker(userPos, { icon, draggable: true })
       .addTo(map)
       .bindPopup("Din posisjon")
       .openPopup();
-    (map as any)._userMarker = myMarker;
-
-    myMarker.on("dragend", (e: L.LeafletEvent) => {
-      const { lat, lng } = (e.target as L.Marker).getLatLng();
-      saveUserLocation(lat, lng, () => {
-        userPos = [lat, lng];
-        drawCircle(1);
-      });
-    });
+    (map as any)._userMarker = marker;
   }
 
+  // Drag to save
+  marker.off("dragend").on("dragend", (e) => {
+    const { lat, lng } = (e.target as L.Marker).getLatLng();
+    userPos = [lat, lng];
+    saveUserLocation(lat, lng);
+  });
+
+  // Click to move & save
   map.on("click", (e: L.LeafletMouseEvent) => {
-    const { lat, lng } = e.latlng;
-    myMarker!.setLatLng([lat, lng]).openPopup();
-    saveUserLocation(lat, lng, () => {
-      userPos = [lat, lng];
-      drawCircle(1);
-    });
+    marker!.setLatLng(e.latlng).openPopup();
+    userPos = [e.latlng.lat, e.latlng.lng];
+    saveUserLocation(userPos[0], userPos[1]);
   });
 }
 
-function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
+
+function saveUserLocation(lat: number, lng: number) {
   const stored = localStorage.getItem("currentUser");
   if (!stored) return;
-  const cu = JSON.parse(stored);
+  const cu = JSON.parse(stored) as { username: string };
+
   fetch("http://localhost:3001/api/users/location", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: cu.username,
-      latitude: lat,
-      longitude: lng,
-    }),
+    body: JSON.stringify({ username: cu.username, latitude: lat, longitude: lng }),
   })
     .then((res) => res.json())
-    .then(() => {
-      cu.latitude = lat;
-      cu.longitude = lng;
-      localStorage.setItem("currentUser", JSON.stringify(cu));
-      if (onUpdate) onUpdate();
-    })
-    .catch(console.error);
+    .then((data) => console.log("✅ Location saved:", data))
+    .catch((err) => console.error("🔥 Save failed:", err));
 }
 
 export function searchProfiles(
@@ -247,4 +258,47 @@ export function exitChallengeView() {
 export function suitableLocations(player: user, opponent: user) {
   const locations: number[] = [1, 2, 3];
   return locations;
+}
+
+export function initMap(containerId = "map") {
+  // 1) Create the map if needed
+  if (!mapRef.current) {
+    mapRef.current = L.map(containerId).setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(mapRef.current);
+  }
+
+  // 2) Fix sizing if the container was hidden/re-shown
+  mapRef.current.invalidateSize();
+
+  // 3) Prompt for geolocation
+  if (!navigator.geolocation) {
+    console.error("Geolocation not supported by this browser");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      userPos = [latitude, longitude];
+
+      // 4) Store coords so userLocation() picks them up
+      const cu = JSON.parse(localStorage.getItem("currentUser") || "{}");
+      cu.latitude  = latitude;
+      cu.longitude = longitude;
+      localStorage.setItem("currentUser", JSON.stringify(cu));
+
+      // 5) Center map & drop/move marker
+      mapRef.current!.setView(userPos, DEFAULT_ZOOM, { animate: true });
+      userLocation();
+
+      // 6) Send this first position immediately to your backend
+      saveUserLocation(latitude, longitude);
+    },
+    (err) => console.error("Geolocation error:", err),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }
