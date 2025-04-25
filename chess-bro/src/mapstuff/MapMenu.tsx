@@ -1,5 +1,7 @@
 // src/mapmenu.tsx
+// src/mapmenu.tsx
 
+import React, { useEffect, useState } from "react";
 import {
   Button,
   FormControlLabel,
@@ -10,8 +12,7 @@ import {
   InputLabel,
   FormControl,
 } from "@mui/material";
-import { useEffect, useState } from "react";
-import { drawCircle, resetMap, searchProfiles, userLocation } from "./map";
+import { drawCircle, resetMap, userLocation, searchProfiles } from "./map";
 import {
   fetchUsers,
   fetchDistanceMatrix,
@@ -24,7 +25,7 @@ import { computeSuitability, SuitabilityOptions } from "./suitability";
 import { mapRef } from "./map";
 import L from "leaflet";
 
-// Helpers for your chesslocation table
+// Your helper module pointing at http://localhost:3001
 import {
   fetchChessLocations,
   createChessLocation,
@@ -33,22 +34,18 @@ import {
 
 const ORS_API_KEY = "5b3ce3597851110001cf6248531655d52f1145c084f0e9a22f18ff56";
 
-// ─── Define a house‐emoji icon ──────────────────────────────────────────────
-const houseIcon = L.divIcon({
-  html: "🏁",
-  className: "",
-  iconSize: [40, 40],
-  iconAnchor: [12, 12],
+// ─── Chessboard icon definition ─────────────────────────────────────────────
+const chessboardIcon = new L.Icon({
+  iconUrl: "/Chessboard.png", // put chessboard.png in your public folder
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
-// Shared route + opponent refs
 let activeRouteLine: L.Polyline | null = null;
 let activeOpponentMarker: L.Marker | null = null;
-// Track chess‐spot markers so we can clear them
 let chessMarkers: L.Marker[] = [];
 
 export default function MapMenu() {
-  // ─── Existing state ───────────────────────────────────────────────────────
   const [isHidden, setIsHidden] = useState(false);
   const [searchRating, setSearchRating] = useState<[number, number]>([
     600, 1200,
@@ -59,11 +56,8 @@ export default function MapMenu() {
     "driving-car" | "foot-walking"
   >("driving-car");
 
-  // ─── Chess‐spot state ──────────────────────────────────────────────────────
-  const [chessSpots, setChessSpots] = useState<ChessLocation[]>([]);
   const [addingSpot, setAddingSpot] = useState(false);
 
-  // Initialize user location + circle
   useEffect(() => {
     if (!isHidden) {
       userLocation();
@@ -71,7 +65,6 @@ export default function MapMenu() {
     }
   }, [whiteMode, searchDistance, isHidden]);
 
-  // Clear only our layers: route, opponent, chess spots
   const clearMapExtras = () => {
     if (!mapRef.current) return;
     if (activeRouteLine) {
@@ -86,15 +79,14 @@ export default function MapMenu() {
     chessMarkers = [];
   };
 
-  // ─── 1) Load & draw persisted chess spots ─────────────────────────────────
+  // 1) Load & draw all saved chess spots using chessboardIcon
   const loadChessSpots = async () => {
     clearMapExtras();
     try {
       const spots = await fetchChessLocations();
-      setChessSpots(spots);
       spots.forEach((s) => {
         if (!mapRef.current) return;
-        const m = L.marker([s.latitude, s.longitude], { icon: houseIcon })
+        const m = L.marker([s.latitude, s.longitude], { icon: chessboardIcon })
           .addTo(mapRef.current)
           .bindPopup(`<b>${s.name}</b><br/>Type: ${s.location_type}`);
         chessMarkers.push(m);
@@ -105,10 +97,10 @@ export default function MapMenu() {
     }
   };
 
-  // ─── 2) Single‐click to add a new chess spot ───────────────────────────────
+  // 2) One-time click to add exactly one new spot with chessboardIcon
   const enableAddSpot = () => {
-    setAddingSpot(true);
     if (!mapRef.current) return;
+    setAddingSpot(true);
 
     mapRef.current.once("click", async (e: L.LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
@@ -119,7 +111,6 @@ export default function MapMenu() {
         setAddingSpot(false);
         return;
       }
-
       try {
         const newLoc = await createChessLocation({
           name,
@@ -127,9 +118,8 @@ export default function MapMenu() {
           latitude: lat,
           longitude: lng,
         });
-        setChessSpots((prev) => [...prev, newLoc]);
         if (mapRef.current) {
-          const m = L.marker([lat, lng], { icon: houseIcon })
+          const m = L.marker([lat, lng], { icon: chessboardIcon })
             .addTo(mapRef.current)
             .bindPopup(
               `<b>${newLoc.name}</b><br/>Type: ${newLoc.location_type}`
@@ -145,7 +135,7 @@ export default function MapMenu() {
     });
   };
 
-  // ─── 3) Find Closest Player (unchanged) ────────────────────────────────────
+  // 3) Find Closest Player (unchanged)
   const findClosestPlayer = async () => {
     clearMapExtras();
     const stored = localStorage.getItem("currentUser");
@@ -157,13 +147,13 @@ export default function MapMenu() {
     const self = allUsers.find((u) => u.username === username);
     if (!self) return;
 
-    const filteredUsers = allUsers.filter(
+    const filtered = allUsers.filter(
       (u) =>
         u.username !== username &&
         u.elo >= searchRating[0] &&
         u.elo <= searchRating[1]
     );
-    const users: UserNode[] = [self, ...filteredUsers];
+    const users: UserNode[] = [self, ...filtered];
     if (users.length < 2) {
       alert("No other matching players found.");
       return;
@@ -179,10 +169,10 @@ export default function MapMenu() {
 
     let closest: UserNode | null = null;
     let minDist = Infinity;
-    for (const [name, dist] of Object.entries(dists)) {
-      if (name !== username && dist < minDist) {
+    for (const [uname, dist] of Object.entries(dists)) {
+      if (uname !== username && dist < minDist) {
         minDist = dist;
-        closest = users.find((u) => u.username === name) || null;
+        closest = users.find((u) => u.username === uname) || null;
       }
     }
     if (!closest) return;
@@ -206,7 +196,7 @@ export default function MapMenu() {
     mapRef.current.setView([closest.latitude, closest.longitude], 13);
   };
 
-  // ─── 4) Find Best Match (unchanged) ────────────────────────────────────────
+  // 4) Find Best Match (unchanged)
   const findBestMatch = async () => {
     clearMapExtras();
     const stored = localStorage.getItem("currentUser");
@@ -218,13 +208,13 @@ export default function MapMenu() {
     const self = allUsers.find((u) => u.username === username);
     if (!self) return;
 
-    const filteredUsers = allUsers.filter(
+    const filtered = allUsers.filter(
       (u) =>
         u.username !== username &&
         u.elo >= searchRating[0] &&
         u.elo <= searchRating[1]
     );
-    const users: UserNode[] = [self, ...filteredUsers];
+    const users: UserNode[] = [self, ...filtered];
     if (users.length < 2) {
       alert("No other matching players found.");
       return;
@@ -236,7 +226,6 @@ export default function MapMenu() {
       eloTolerance: 400,
       weights: { distance: 1, elo: 2 },
     };
-
     let bestMatch: { user: UserNode; score: number } | null = null;
     for (const candidate of users) {
       if (candidate.username === username) continue;
@@ -292,6 +281,7 @@ export default function MapMenu() {
 
       {!isHidden && (
         <div className="w-full border-2 flex flex-col p-2">
+          {/* your existing controls… */}
           <p>Preferred rating</p>
           <Slider
             sx={{ width: "80%", alignSelf: "center" }}
@@ -370,7 +360,7 @@ export default function MapMenu() {
             Find Best Match
           </Button>
 
-          {/* Chess-spot buttons */}
+          {/* ─── Chess-spot buttons ────────────────────────────────────────── */}
           <Button
             sx={{ width: "80%", mt: 2 }}
             variant="contained"
