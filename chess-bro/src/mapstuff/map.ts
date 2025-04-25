@@ -1,21 +1,37 @@
-import L, { LatLngTuple } from "leaflet";
-import { user } from "../login/user";
+// src/map.ts
 
+import L, { LatLngTuple } from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Configure default Leaflet marker icon
+delete (L.Icon.Default as any).prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 export const mapRef: { current: L.Map | null } = { current: null };
-export const challengeModeRef : {
-    setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
-    chal?: boolean;
-    selectedUser?: user;
+export const challengeModeRef: {
+  setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
+  chal?: boolean;
+  selectedUser?: any;
 } = {};
-
 
 const TRONDHEIM_CENTER: LatLngTuple = [63.4305, 10.3951];
 const DEFAULT_ZOOM = 13;
 
 let userPos: LatLngTuple = [0, 0];
 let searchRange: L.Circle | null = null;
+let drawnRoutes: L.Polyline[] = [];
 
+let white : boolean = true;
+
+/**
+ * Clear all non-tile layers except the user marker, reset view.
+ */
 export function resetMap() {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -28,24 +44,30 @@ export function resetMap() {
     }
   });
 
-  map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+  drawnRoutes.forEach((line) => map.removeLayer(line));
+  drawnRoutes = [];
+
+  //map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 }
 
-/** Draws a search radius around the current user */
+/**
+ * Draw a circle around the current user position.
+ */
 export function drawCircle(radiusKm: number) {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
   //map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 
-  if (searchRange) {
-    map.removeLayer(searchRange);
-  }
+  if (searchRange) map.removeLayer(searchRange);
   searchRange = L.circle(userPos, { radius: radiusKm * 1000 });
   searchRange.addTo(map);
 }
 
-/** Displays the current user’s marker and enables moving it */
+/**
+ * Place (or move) a single draggable user marker.
+ * No map clicks here—only dragend updates userPos.
+ */
 export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -58,42 +80,27 @@ export function userLocation() {
     }
   }
 
-  map.off("click");
-
-  const icon = L.divIcon({
-    html: `<div style="font-size:26px;">📍</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
-
-  let myMarker = (map as any)._userMarker as L.Marker | undefined;
-
-  if (myMarker) {
-    myMarker.setLatLng(userPos);
+  // Add or move the marker
+  const icon = new L.Icon.Default();
+  let m = (map as any)._userMarker as L.Marker | undefined;
+  if (m) {
+    m.setLatLng(userPos);
   } else {
-    myMarker = L.marker(userPos, { icon, draggable: true })
+    m = L.marker(userPos, { icon, draggable: true })
       .addTo(map)
       .bindPopup("Din posisjon")
       .openPopup();
-    (map as any)._userMarker = myMarker;
-
-    myMarker.on("dragend", (e: L.LeafletEvent) => {
-      const { lat, lng } = (e.target as L.Marker).getLatLng();
-      saveUserLocation(lat, lng, () => {
-        userPos = [lat, lng];
-        drawCircle(1); // or store last radius value
-      });
-    });
+    (map as any)._userMarker = m;
   }
 
-  map.on("click", (e: L.LeafletMouseEvent) => {
-    const { lat, lng } = e.latlng;
-    myMarker!.setLatLng([lat, lng]).openPopup();
-    saveUserLocation(lat, lng, () => {
-      userPos = [lat, lng];
-      drawCircle(1);
-    });
+  // Dragging saves new location
+  m.off("dragend").on("dragend", (e) => {
+    const { lat, lng } = (e.target as L.Marker).getLatLng();
+    userPos = [lat, lng];
+    saveUserLocation(lat, lng);
   });
+
+  // **No** map.on("click") anymore
 }
 
 function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
@@ -109,16 +116,13 @@ function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
     }),
   })
     .then((res) => res.json())
-    .then(() => {
-      cu.latitude = lat;
-      cu.longitude = lng;
-      localStorage.setItem("currentUser", JSON.stringify(cu));
-      if (onUpdate) onUpdate();
-    })
-    .catch(console.error);
+    .then((data) => console.log("✅ Location saved:", data))
+    .catch((err) => console.error("🔥 Save failed:", err));
 }
 
-/** Loads other users and shows them as piece markers */
+/**
+ * Search other profiles around the user.
+ */
 export function searchProfiles(
   whiteMode: boolean,
   ratingRange: [number, number],
@@ -127,9 +131,11 @@ export function searchProfiles(
   if (!mapRef.current) return;
   const map = mapRef.current;
 
+  white = whiteMode;
+
   resetMap();
   drawCircle(distanceKm);
-  userLocation(); // restore your own 📍 marker
+  userLocation();
 
   const cu = getUser();
   let me = "";
@@ -151,9 +157,9 @@ export function searchProfiles(
           elo: number | null;
         }[];
       }) => {
+        console.log(data);
         data.locations.forEach((u) => {
           if (u.username === me) return;
-
           const elo = u.elo ?? 0;
           if (elo < ratingRange[0] || elo > ratingRange[1]) return;
 
@@ -167,8 +173,7 @@ export function searchProfiles(
               rating: elo,
               location: [u.latitude, u.longitude],
             },
-            whiteMode,
-            distKm
+            whiteMode
           );
         });
       }
@@ -178,8 +183,7 @@ export function searchProfiles(
 
 function userPopup(
   u: { username: string; rating: number; location: LatLngTuple },
-  whiteMode: boolean,
-  distKm: number
+  whiteMode: boolean
 ) {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -198,14 +202,28 @@ function userPopup(
   });
 
   const marker = L.marker(u.location, { icon }).addTo(map);
-  marker.bindPopup(
-    `<b>${u.username}</b><br/>
-     ELO: ${u.rating}<br/>
-     Avstand: ${distKm.toFixed(2)} km`
-  );
+
+  if(!challengeModeRef.chal){
+    const popupDiv = document.createElement("div");
+    const heading = document.createElement("h1");
+    heading.textContent = u.username;
+    const ratingP = document.createElement("p");
+    ratingP.textContent = `ELO: ${u.rating}`;
+  
+    const button = document.createElement("button");
+    button.textContent = "Send challenge";
+    button.style.backgroundColor = "lightblue";
+    button.onclick = () => challengeView(u);
+  
+    popupDiv.appendChild(heading);
+    popupDiv.appendChild(ratingP);
+    popupDiv.appendChild(button);
+  
+    marker.bindPopup(popupDiv);
+  }
 }
 
-function challengeView(opponent : user){
+function challengeView(opponent : any){
     if (challengeModeRef.setChallengeMode) {
         challengeModeRef.selectedUser = opponent;
         challengeModeRef.setChallengeMode(prev => {
@@ -216,27 +234,63 @@ function challengeView(opponent : user){
         });
     }
     resetMap();
+    userPopup(opponent, white);
 }
 
-export function exitChallengeView(){
-    if (challengeModeRef.setChallengeMode) {
-        challengeModeRef.setChallengeMode(() => false);
-        challengeModeRef.chal = false;
-    }
-    resetMap();
+export function exitChallengeView() {
+  if (challengeModeRef.setChallengeMode) {
+    challengeModeRef.setChallengeMode(() => false);
+    challengeModeRef.chal = false;
+  }
+  resetMap();
 }
 
-export function suitableLocations(player : user, opponent : user){
-    //Hente inn spillesteder i nærheten av spillerne
-    const locations : number[] = [1, 2, 3];
-    return locations;
+export function suitableLocations(_: any, __: any) {
+  return [1, 2, 3];
+}
+
+export function initMap(containerId = "map") {
+  if (!mapRef.current) {
+    mapRef.current = L.map(containerId).setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(mapRef.current);
+  }
+  mapRef.current.invalidateSize();
+
+  if (!navigator.geolocation) {
+    console.error("Geolocation not supported");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      userPos = [latitude, longitude];
+
+      const cu = JSON.parse(localStorage.getItem("currentUser") || "{}");
+      cu.latitude = latitude;
+      cu.longitude = longitude;
+      localStorage.setItem("currentUser", JSON.stringify(cu));
+
+      mapRef.current!.setView(userPos, DEFAULT_ZOOM, { animate: true });
+      userLocation();
+      saveUserLocation(latitude, longitude);
+    },
+    (err) => console.error("Geolocation error:", err),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }
 
 
-
-//flytt denne til mer egnet fil
 export function getUser(){
     const stored = localStorage.getItem("currentUser");
     if (!stored || !mapRef.current) return;
     return JSON.parse(stored);
 }
+
+
+
+

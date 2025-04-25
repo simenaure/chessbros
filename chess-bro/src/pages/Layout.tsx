@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import NavBar from "./NavBar";
+import Footer from "./Footer";
 
 interface LayoutProps {
   currentUser: any;
@@ -24,6 +25,7 @@ export default function Layout({
       />
       {/* ✅ This renders child route components */}
       <Outlet />
+      <Footer />
     </>
   );
 }

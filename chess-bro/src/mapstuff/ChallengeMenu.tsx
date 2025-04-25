@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {challengeModeRef, exitChallengeView } from "./map";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Button, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 
 export default function ChallengeMenu() {
@@ -13,34 +13,68 @@ export default function ChallengeMenu() {
     const player = JSON.parse(currentUser);
     const opponent = challengeModeRef.selectedUser;
 
-    const playerFav = "blitz";
-    const opponentFav = "blitz";
+    const playerFav = "bullet";
+    const opponentFav = "rapid";
+
+    const suitableLocations : number[] = [1, 2, 3, 4, 5];
 
     const formatOutline  = (format : string) => {
-        if (format == playerFav && format == opponentFav) return "2px solid green";
-        if (format == playerFav) return "2px solid blue";
-        if (format == opponentFav) return "2px solid red";
+        if (format == playerFav && format == opponentFav) return "0 0 25px rgba(0, 0, 200, 0.5)";
+        if (format == playerFav) return "0 0 25px rgba(0, 200, 0, 0.5)";
+        if (format == opponentFav) return "0 0 25px rgba(200, 0, 0, 0.5)";
+        return "";
     };
+
+    const favoriteFormat = (format : string) => {
+        if (format == playerFav && format == opponentFav) return "Both players' favorite";
+        if (format == playerFav) return "Your favorite";
+        if (format == opponentFav) return opponent.username + "'s favorite";
+        return "";
+    }
 
     return (
         <div className="w-1/4 flex flex-col items-center">
-            FIGHT!
-            <button onClick={exitChallengeView}>
+            <Button
+                onClick={exitChallengeView}
+                variant="contained"
+                color="error"
+                sx={{
+                    my: "20px",
+                    width: "50%"
+                }}
+            >
                 Close
-            </button>
-            <h1>Challenge {opponent?.username}</h1>
-            <h2>Suggest a format</h2>
+            </Button>
+            <h2 className="text-4xl mb-4">Challenge {opponent?.username}</h2>
+            <h2 className="text-3xl mb-2">Suggest a format</h2>
             <ToggleButtonGroup
                 value={format}
                 onChange={(e, val) => setFormat(val)}
                 exclusive
                 color="warning"
+                sx={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    paddingX: "20px"
+                }}
             >
+                <ToggleButton 
+                    value={"bullet"} 
+                    sx={{
+                        boxShadow: formatOutline("bullet"),
+                        width: "20%",
+                        fontSize: "0.7em"
+                    }}
+                >
+                    Bullet
+                </ToggleButton>
                 <ToggleButton 
                     value={"blitz"} 
                     sx={{
-                        border: formatOutline("blitz"),
-                        mx: 2
+                        boxShadow: formatOutline("blitz"),
+                        width: "20%",
+                        fontSize: "0.7em"
                     }}
                 >
                     Blitz
@@ -48,8 +82,9 @@ export default function ChallengeMenu() {
                 <ToggleButton
                     value={"rapid"}
                     sx={{
-                        border: formatOutline("rapid"),
-                        mx: 2
+                        boxShadow: formatOutline("rapid"),
+                        width: "20%",
+                        fontSize: "0.7em"
                     }}
                 >
                     Rapid
@@ -57,19 +92,51 @@ export default function ChallengeMenu() {
                 <ToggleButton
                     value={"classical"}
                     sx={{
-                        border: formatOutline("classical"),
-                        mx: 2
+                        boxShadow: formatOutline("classical"),
+                        width: "20%",
+                        fontSize: "0.7em"
                     }}
                 >
                     Classical
                 </ToggleButton>
             </ToggleButtonGroup>
-            <h2>Suggest a location</h2>
-            <ul>
-
-            </ul>
-            <button>Send challenge</button>
-            {format}
+            <div className="flex justify-between w-full px-5">
+                    <div className="text-xs text-center w-1/5">{favoriteFormat("bullet")}</div>
+                    <div className="text-xs text-center w-1/5">{favoriteFormat("blitz")}</div>
+                    <div className="text-xs text-center w-1/5">{favoriteFormat("rapid")}</div>
+                    <div className="text-xs text-center w-1/5">{favoriteFormat("classical")}</div>
+            </div>
+            <h2 className="text-3xl mb-2">Suggest a location</h2>
+            <ToggleButtonGroup
+                value={location}
+                onChange={(e, val) => setLocation(val)}
+                exclusive
+                color="warning"
+                sx={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-around",
+                    paddingX: "20px"
+                }}
+            >
+                {suitableLocations.map((loc, i) => (
+                    <ToggleButton key={i} value={loc}>
+                        {loc}
+                    </ToggleButton>
+                ))}
+            </ToggleButtonGroup>
+            <Button
+                onClick={exitChallengeView}
+                variant="contained"
+                color="success"
+                sx={{
+                    my: "20px",
+                    width: "50%"
+                }}
+            >
+                Send challenge
+            </Button>
+            {format}{location}
         </div>
     )
 }
