@@ -19,11 +19,10 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT) || 5432,
 });
 
-// POST endpoint for signup
+// ---------- SIGNUP ----------
 app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
   const { username, firstName, lastName, email, password, confirmPassword } =
     req.body;
-
   if (
     !username ||
     !firstName ||
@@ -40,8 +39,7 @@ app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   try {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const insertQuery = `
       INSERT INTO users (username, firstname, lastname, email, password)
       VALUES ($1, $2, $3, $4, $5)
@@ -61,7 +59,7 @@ app.post("/api/signup", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// POST endpoint for login (oppdatert til å bruke username)
+// ---------- LOGIN ----------
 app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -69,15 +67,17 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   try {
-    const userQuery = "SELECT * FROM users WHERE username = $1";
-    const userResult = await pool.query(userQuery, [username]);
+    const userResult = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
     if (userResult.rowCount === 0) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
     const user = userResult.rows[0];
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
@@ -102,10 +102,10 @@ app.post("/api/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// PUT endpoint for å oppdatere profilinformasjon
+// ---------- UPDATE PROFILE ----------
 app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
   const {
-    username, // PRIMARY KEY, skal ikke endres
+    username,
     email,
     firstname,
     lastname,
@@ -116,68 +116,61 @@ app.put("/api/profile", async (req: Request, res: Response): Promise<void> => {
     address,
     zip,
   } = req.body;
-
   if (!username) {
-    res
-      .status(400)
-      .json({ error: "Username (primary key) er påkrevd for oppdatering" });
+    res.status(400).json({ error: "Username is required for update" });
     return;
   }
-
   try {
     const updateQuery = `
       UPDATE users
       SET 
-        email = COALESCE($1, email),
+        email     = COALESCE($1, email),
         firstname = COALESCE($2, firstname),
-        lastname = COALESCE($3, lastname),
-        gender = COALESCE($4, gender),
-        country = COALESCE($5, country),
-        phone = COALESCE($6, phone),
-        city = COALESCE($7, city),
-        address = COALESCE($8, address),
-        zip = COALESCE($9, zip)
+        lastname  = COALESCE($3, lastname),
+        gender    = COALESCE($4, gender),
+        country   = COALESCE($5, country),
+        phone     = COALESCE($6, phone),
+        city      = COALESCE($7, city),
+        address   = COALESCE($8, address),
+        zip       = COALESCE($9, zip)
       WHERE username = $10
       RETURNING username, email, firstname, lastname, gender, country, phone, city, address, zip;
     `;
     const values = [
-      email, // $1
-      firstname, // $2
-      lastname, // $3
-      gender, // $4
-      country, // $5
-      phone, // $6
-      city, // $7
-      address, // $8
-      zip, // $9
-      username, // $10
+      email,
+      firstname,
+      lastname,
+      gender,
+      country,
+      phone,
+      city,
+      address,
+      zip,
+      username,
     ];
-
     const result = await pool.query(updateQuery, values);
     if (result.rowCount === 0) {
-      res.status(404).json({ error: "Bruker ikke funnet" });
+      res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json({ message: "Profil oppdatert", user: result.rows[0] });
+    res.json({ message: "Profile updated", user: result.rows[0] });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).json({ error: "Intern serverfeil" });
+    res.status(500).json({ error: "Server error updating profile" });
   }
 });
 
-// GET endpoint for å hente chess stats
+// ---------- CHESS STATS GET ----------
 app.get(
   "/api/chess/:username",
   async (req: Request, res: Response): Promise<void> => {
     const { username } = req.params;
     try {
-      const query = `SELECT * FROM chess WHERE username = $1;`;
-      const result = await pool.query(query, [username]);
-      if (result.rowCount === 0) {
-        res.json({ chessStats: null });
-      } else {
-        res.json({ chessStats: result.rows[0] });
-      }
+      const result = await pool.query(
+        "SELECT * FROM chess WHERE username = $1",
+        [username]
+      );
+      res.json({ chessStats: result.rowCount ? result.rows[0] : null });
     } catch (error) {
       console.error("Error fetching chess stats:", error);
       res.status(500).json({ error: "Server error fetching chess stats" });
@@ -185,31 +178,29 @@ app.get(
   }
 );
 
-// PUT endpoint to insert or update chess stats
+// ---------- CHESS STATS PUT ----------
 app.put("/api/chess", async (req: Request, res: Response): Promise<void> => {
   const { username, elo, wins, losses, draws, favoritetype } = req.body;
-
   if (!username) {
     res.status(400).json({ error: "Username is required." });
     return;
   }
-
   try {
-    // Use UPSERT to insert new record or update existing one
-    const query = `
+    const result = await pool.query(
+      `
       INSERT INTO chess (username, elo, wins, losses, draws, favoritetype)
       VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (username)
       DO UPDATE SET 
-        elo = EXCLUDED.elo, 
-        wins = EXCLUDED.wins, 
-        losses = EXCLUDED.losses, 
-        draws = EXCLUDED.draws, 
+        elo          = EXCLUDED.elo,
+        wins         = EXCLUDED.wins,
+        losses       = EXCLUDED.losses,
+        draws        = EXCLUDED.draws,
         favoritetype = EXCLUDED.favoritetype
       RETURNING *;
-    `;
-    const values = [username, elo, wins, losses, draws, favoritetype];
-    const result = await pool.query(query, values);
+    `,
+      [username, elo, wins, losses, draws, favoritetype]
+    );
     res.json({ message: "Chess stats saved", chessStats: result.rows[0] });
   } catch (error) {
     console.error("Error updating chess stats:", error);
@@ -217,31 +208,31 @@ app.put("/api/chess", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// PUT endpoint for updating user location
-// PUT endpoint for updating user location
+// ---------- UPDATE USER LOCATION ----------
 app.put(
   "/api/users/location",
   async (req: Request, res: Response): Promise<void> => {
     const { username, latitude, longitude } = req.body;
-
     if (!username || latitude == null || longitude == null) {
-      res.status(400).json({ error: "username, latitude og longitude kreves" });
+      res
+        .status(400)
+        .json({ error: "username, latitude and longitude are required" });
       return;
     }
-
     try {
       const result = await pool.query(
-        `UPDATE users
-         SET latitude = $2, longitude = $3
-         WHERE username = $1
-         RETURNING username, latitude, longitude;`,
+        `
+      UPDATE users
+      SET latitude = $2, longitude = $3
+      WHERE username = $1
+      RETURNING username, latitude, longitude;
+    `,
         [username, latitude, longitude]
       );
-
       if (result.rowCount === 0) {
-        res.status(404).json({ error: "Bruker ikke funnet" });
+        res.status(404).json({ error: "User not found" });
       } else {
-        res.json({ message: "Posisjon oppdatert", location: result.rows[0] });
+        res.json({ message: "Location updated", location: result.rows[0] });
       }
     } catch (err) {
       console.error("Error updating location:", err);
@@ -250,21 +241,21 @@ app.put(
   }
 );
 
-// GET endpoint for fetching all user locations + elo
+// ---------- GET ALL USER LOCATIONS ----------
 app.get(
   "/api/users/locations",
   async (_req: Request, res: Response): Promise<void> => {
     try {
       const result = await pool.query(`
-        SELECT 
-          u.username, 
-          u.latitude, 
-          u.longitude,
-          c.elo
-        FROM users u
-        LEFT JOIN chess c ON u.username = c.username
-        WHERE u.latitude IS NOT NULL AND u.longitude IS NOT NULL;
-      `);
+      SELECT 
+        u.username, 
+        u.latitude, 
+        u.longitude,
+        c.elo
+      FROM users u
+      LEFT JOIN chess c ON u.username = c.username
+      WHERE u.latitude IS NOT NULL AND u.longitude IS NOT NULL;
+    `);
       res.json({ locations: result.rows });
     } catch (err) {
       console.error("Error fetching locations:", err);
@@ -273,13 +264,57 @@ app.get(
   }
 );
 
-// Error handling middleware
-app.use((err: any, res: Response) => {
+// ---------- CHESSLOCATION ENDPOINTS ----------
+
+// GET all chess spots
+app.get("/api/chesslocations", async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT location_id, longitude, latitude, name, location_type
+      FROM chesslocation;
+    `);
+    res.json({ locations: result.rows });
+  } catch (err) {
+    console.error("Error fetching chess locations:", err);
+    res.status(500).json({ error: "Server error fetching chess locations" });
+  }
+});
+
+// POST a new chess spot
+app.post("/api/chesslocations", async (req: Request, res: Response) => {
+  const { name, location_type, latitude, longitude } = req.body;
+  if (!name || !location_type || latitude == null || longitude == null) {
+    res
+      .status(400)
+      .json({
+        error: "name, location_type, latitude and longitude are required",
+      });
+    return;
+  }
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO chesslocation (name, location_type, latitude, longitude)
+      VALUES ($1, $2, $3, $4)
+      RETURNING location_id, longitude, latitude, name, location_type;
+      `,
+      [name, location_type, latitude, longitude]
+    );
+    res.status(201).json({ location: result.rows[0] });
+  } catch (err) {
+    console.error("Error inserting chess location:", err);
+    res.status(500).json({ error: "Server error inserting chess location" });
+  }
+});
+
+// Error handler
+app.use((err: any, _req: Request, res: Response) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal server error" });
 });
 
+// Start server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server kjører på port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
