@@ -9,7 +9,7 @@ import {
   FormControl,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { drawCircle, resetMap, searchProfiles, userLocation } from "./map";
+import { drawCircle, getUser, resetMap, searchProfiles, userLocation } from "./map";
 import {
   fetchUsers,
   fetchDistanceMatrix,
@@ -35,9 +35,7 @@ export default function MapMenu() {
   ]);
   const [searchDistance, setSearchDistance] = useState<number>(1);
   const [whiteMode, setWhiteMode] = useState<boolean>(true);
-  const [transportMode, setTransportMode] = useState<
-    "driving-car" | "foot-walking"
-  >("driving-car");
+  const [transportMode, setTransportMode] = useState<"driving-car" | "foot-walking">("driving-car");
 
   useEffect(() => {
     if (!isHidden) {
@@ -62,10 +60,7 @@ export default function MapMenu() {
   const findClosestPlayer = async () => {
     clearMapExtras();
 
-    const stored = localStorage.getItem("currentUser");
-    if (!stored || !mapRef.current) return;
-
-    const currentUser = JSON.parse(stored);
+    const currentUser = getUser();
     const username = currentUser.username;
 
     const allUsers = await fetchUsers();
@@ -128,10 +123,7 @@ export default function MapMenu() {
   const findBestMatch = async () => {
     clearMapExtras();
 
-    const stored = localStorage.getItem("currentUser");
-    if (!stored || !mapRef.current) return;
-
-    const currentUser = JSON.parse(stored);
+    const currentUser = getUser();
     const username = currentUser.username;
 
     const allUsers = await fetchUsers();

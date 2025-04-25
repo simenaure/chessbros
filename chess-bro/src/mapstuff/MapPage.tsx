@@ -35,7 +35,7 @@ export default function MapPage() {
 
   return (
     <div className="flex">
-      {!challengeModeRef.chal ? <MapMenu/> : <ChallengeMenu />}
+      {!challengeMode ? <MapMenu/> : <ChallengeMenu />}
       <div id="map" 
         style={{ height: "800px", width: "80%" }}
       ></div>

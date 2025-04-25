@@ -8,7 +8,9 @@ export default function ChallengeMenu() {
     const [format, setFormat] = useState("blitz");
     const [location, setLocation] = useState();
 
-    const player = localStorage.getItem("currentUser");
+    const currentUser = localStorage.getItem("currentUser");
+    if (!currentUser) return;
+    const player = JSON.parse(currentUser);
     const opponent = challengeModeRef.selectedUser;
 
     const playerFav = "blitz";

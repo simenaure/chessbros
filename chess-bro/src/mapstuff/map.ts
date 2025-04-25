@@ -36,7 +36,7 @@ export function drawCircle(radiusKm: number) {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
+  //map.setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
 
   if (searchRange) {
     map.removeLayer(searchRange);
@@ -50,11 +50,11 @@ export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  const stored = localStorage.getItem("currentUser");
-  if (stored) {
-    const cu = JSON.parse(stored) as { latitude?: number; longitude?: number };
-    if (cu.latitude != null && cu.longitude != null) {
-      userPos = [cu.latitude, cu.longitude];
+  const currentUser = getUser();
+  
+  if (currentUser) {
+    if (currentUser.latitude != null && currentUser.longitude != null) {
+      userPos = [currentUser.latitude, currentUser.longitude];
     }
   }
 
@@ -97,9 +97,8 @@ export function userLocation() {
 }
 
 function saveUserLocation(lat: number, lng: number, onUpdate?: () => void) {
-  const stored = localStorage.getItem("currentUser");
-  if (!stored) return;
-  const cu = JSON.parse(stored);
+  const cu = getUser();
+  if (cu)
   fetch("http://localhost:3001/api/users/location", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -132,14 +131,9 @@ export function searchProfiles(
   drawCircle(distanceKm);
   userLocation(); // restore your own 📍 marker
 
-  const stored = localStorage.getItem("currentUser");
+  const cu = getUser();
   let me = "";
-  if (stored) {
-    const cu = JSON.parse(stored) as {
-      username: string;
-      latitude?: number;
-      longitude?: number;
-    };
+  if (cu) {
     if (cu.latitude != null && cu.longitude != null) {
       userPos = [cu.latitude, cu.longitude];
     }
@@ -192,8 +186,8 @@ function userPopup(
 
   let img: string;
   if (u.rating < 500) img = "pawn.png";
-  else if (u.rating < 800) img = "bishop.png";
-  else if (u.rating < 1000) img = "knight.png";
+  else if (u.rating < 800) img = "knight.png";
+  else if (u.rating < 1000) img = "bishop.png";
   else if (u.rating < 1500) img = "rook.png";
   else if (u.rating < 2000) img = "queen.png";
   else img = "king.png";
@@ -222,8 +216,6 @@ function challengeView(opponent : user){
         });
     }
     resetMap();
-    //userLocation(white);
-    //userPopup(opponent, white);
 }
 
 export function exitChallengeView(){
@@ -232,11 +224,19 @@ export function exitChallengeView(){
         challengeModeRef.chal = false;
     }
     resetMap();
-    //userLocation(white);
 }
 
 export function suitableLocations(player : user, opponent : user){
     //Hente inn spillesteder i nærheten av spillerne
     const locations : number[] = [1, 2, 3];
     return locations;
+}
+
+
+
+//flytt denne til mer egnet fil
+export function getUser(){
+    const stored = localStorage.getItem("currentUser");
+    if (!stored || !mapRef.current) return;
+    return JSON.parse(stored);
 }
