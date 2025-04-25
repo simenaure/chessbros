@@ -11,7 +11,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [gender, setGender] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,7 +20,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
       !username ||
       !firstName ||
       !lastName ||
-      !gender ||
       !email ||
       !password ||
       !confirmPassword
@@ -41,7 +39,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
           username,
           firstName,
           lastName,
-          gender,
           email,
           password,
           confirmPassword,
@@ -54,7 +51,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
         setUsername("");
         setFirstName("");
         setLastName("");
-        setGender("");
         setEmail("");
         setPassword("");
         setConfirmPassword("");
@@ -104,15 +100,6 @@ const SignUp: React.FC<SignupPageProps> = ({ isOpen, onClose }) => {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Last Name"
-          />
-
-          <label className="signup-label">Gender:</label>
-          <input
-            type="text"
-            className="signup-input"
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            placeholder="Gender"
           />
 
           <label className="signup-label">Email:</label>
