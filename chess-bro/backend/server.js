@@ -150,8 +150,8 @@ app.use(express_1.default.json());
 var pool = new Pool({
   user: process.env.DB_USER || "postgres",
   host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "ChessBro",
-  password: process.env.DB_PASSWORD || "Gib2",
+  database: process.env.DB_NAME || "chessbros",
+  password: process.env.DB_PASSWORD || "gib2",
   port: Number(process.env.DB_PORT) || 5432,
 });
 // POST endpoint for signup
