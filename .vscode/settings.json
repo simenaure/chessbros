@@ -5,10 +5,11 @@
       "server": "localhost",
       "port": 5432,
       "driver": "PostgreSQL",
-      "name": "ChessBrothers",
-      "database": "ChessBro",
       "username": "postgres",
-      "password": "Gib2"
+      "name": "chessbros",
+      "database": "chessbros",
+      "password": "gib2",
+      "connectionTimeout": 30
     }
   ]
 }
