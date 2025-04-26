@@ -14,8 +14,8 @@ app.use(express.json());
 const pool = new Pool({
   user: process.env.DB_USER || "postgres",
   host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "chessbros",
-  password: process.env.DB_PASSWORD || "gib2",
+  database: process.env.DB_NAME || "ChessBro",
+  password: process.env.DB_PASSWORD || "Gib2",
   port: Number(process.env.DB_PORT) || 5432,
 });
 
@@ -284,11 +284,9 @@ app.get("/api/chesslocations", async (_req: Request, res: Response) => {
 app.post("/api/chesslocations", async (req: Request, res: Response) => {
   const { name, location_type, latitude, longitude } = req.body;
   if (!name || !location_type || latitude == null || longitude == null) {
-    res
-      .status(400)
-      .json({
-        error: "name, location_type, latitude and longitude are required",
-      });
+    res.status(400).json({
+      error: "name, location_type, latitude and longitude are required",
+    });
     return;
   }
   try {
@@ -306,6 +304,37 @@ app.post("/api/chesslocations", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Server error inserting chess location" });
   }
 });
+
+// ---------- CHALLENGE SEND ----------
+app.post(
+  "/api/challenges",
+  async (req: Request, res: Response): Promise<void> => {
+    const { fromUser, toUser, format, locationId } = req.body;
+    if (!fromUser || !toUser || !format || !locationId) {
+      res.status(400).json({ error: "Missing challenge data" });
+      return;
+    }
+    try {
+      const insertQuery = `
+      INSERT INTO challenges (from_user, to_user, format, location_id, sent_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING *;
+    `;
+      const result = await pool.query(insertQuery, [
+        fromUser,
+        toUser,
+        format,
+        locationId,
+      ]);
+      res
+        .status(201)
+        .json({ message: "Challenge sent", challenge: result.rows[0] });
+    } catch (error) {
+      console.error("Error sending challenge:", error);
+      res.status(500).json({ error: "Server error sending challenge" });
+    }
+  }
+);
 
 // Error handler
 app.use((err: any, _req: Request, res: Response) => {
