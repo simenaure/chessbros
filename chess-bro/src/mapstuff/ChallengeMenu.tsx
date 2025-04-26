@@ -16,6 +16,8 @@ export default function ChallengeMenu() {
 
     const playerFav = "bullet";
     const opponentFav = "rapid";
+    //const playerFav = getFavoriteType(player);
+    //const opponentFav = getFavoriteType(opponent);
 
     useEffect(() => {
         (async () => {
@@ -55,6 +57,21 @@ export default function ChallengeMenu() {
         if (format == opponentFav) return opponent.username + "'s favorite";
         return "";
     }
+
+
+
+
+
+    function sendChallenge() {
+        throw new Error("Function not implemented.");
+
+        //Lagre utfordring i tabell i databasen og kanskje gi en alert "Utfordring sendt!"
+        //OBS: bruk player.username og opponent.username for referanse til brukernavn
+    }
+
+
+
+
 
     return (
         <div className="w-1/4 flex flex-col items-center">
@@ -159,7 +176,7 @@ export default function ChallengeMenu() {
                 ))}
             </ToggleButtonGroup>
             <Button
-                onClick={exitChallengeView}
+                onClick={sendChallenge}
                 variant="contained"
                 color="success"
                 sx={{
@@ -171,4 +188,10 @@ export default function ChallengeMenu() {
             </Button>
         </div>
     )
+}
+
+function getFavoriteType(player: any) {
+    throw new Error("Function not implemented.");
+
+    //Henter favoritt sjakktype fra databasen for en gitt bruker
 }
