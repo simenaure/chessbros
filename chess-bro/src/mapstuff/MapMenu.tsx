@@ -1,7 +1,7 @@
 // src/mapmenu.tsx
 // src/mapmenu.tsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   FormControlLabel,
@@ -12,38 +12,10 @@ import {
   InputLabel,
   FormControl,
 } from "@mui/material";
-import { drawCircle, getUser, resetMap, userLocation, searchProfiles } from "./map";
-import {
-  fetchUsers,
-  fetchDistanceMatrix,
-  buildGraph,
-  dijkstra,
-  fetchRoutePolyline,
-  UserNode,
-} from "./dijkstra";
-import { computeSuitability, SuitabilityOptions } from "./suitability";
-import { mapRef } from "./map";
-import L from "leaflet";
+import { drawCircle, resetMap, userLocation, searchProfiles, clearMapExtras, findClosestPlayer, findBestMatch, loadChessSpots, enableAddSpot, addingSpotRef, challengeModeRef } from "./map";
 
-// Your helper module pointing at http://localhost:3001
-import {
-  fetchChessLocations,
-  createChessLocation,
-  ChessLocation,
-} from "./setLocation";
 
-const ORS_API_KEY = "5b3ce3597851110001cf6248531655d52f1145c084f0e9a22f18ff56";
 
-// ─── Chessboard icon definition ─────────────────────────────────────────────
-const chessboardIcon = new L.Icon({
-  iconUrl: "/Chessboard.png", // put chessboard.png in your public folder
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-});
-
-let activeRouteLine: L.Polyline | null = null;
-let activeOpponentMarker: L.Marker | null = null;
-let chessMarkers: L.Marker[] = [];
 
 export default function MapMenu() {
   const [isHidden, setIsHidden] = useState(false);
@@ -65,201 +37,11 @@ export default function MapMenu() {
     }
   }, [whiteMode, searchDistance, isHidden]);
 
-  const clearMapExtras = () => {
-    if (!mapRef.current) return;
-    if (activeRouteLine) {
-      mapRef.current.removeLayer(activeRouteLine);
-      activeRouteLine = null;
-    }
-    if (activeOpponentMarker) {
-      mapRef.current.removeLayer(activeOpponentMarker);
-      activeOpponentMarker = null;
-    }
-    chessMarkers.forEach((m) => mapRef.current?.removeLayer(m));
-    chessMarkers = [];
-  };
+  useEffect(() => {
+    addingSpotRef.setAddingSpot = setAddingSpot;
+  }, []);
 
-  // 1) Load & draw all saved chess spots using chessboardIcon
-  const loadChessSpots = async () => {
-    clearMapExtras();
-    try {
-      const spots = await fetchChessLocations();
-      spots.forEach((s) => {
-        if (!mapRef.current) return;
-        const m = L.marker([s.latitude, s.longitude], { icon: chessboardIcon })
-          .addTo(mapRef.current)
-          .bindPopup(`<b>${s.name}</b><br/>Type: ${s.location_type}`);
-        chessMarkers.push(m);
-      });
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Failed to load chess spots");
-    }
-  };
-
-  // 2) One-time click to add exactly one new spot with chessboardIcon
-  const enableAddSpot = () => {
-    if (!mapRef.current) return;
-    setAddingSpot(true);
-
-    mapRef.current.once("click", async (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      const name = prompt("Spot name:")?.trim();
-      const location_type = prompt("Spot type (e.g. park):")?.trim();
-      if (!name || !location_type) {
-        alert("Name & type required");
-        setAddingSpot(false);
-        return;
-      }
-      try {
-        const newLoc = await createChessLocation({
-          name,
-          location_type,
-          latitude: lat,
-          longitude: lng,
-        });
-        if (mapRef.current) {
-          const m = L.marker([lat, lng], { icon: chessboardIcon })
-            .addTo(mapRef.current)
-            .bindPopup(
-              `<b>${newLoc.name}</b><br/>Type: ${newLoc.location_type}`
-            );
-          chessMarkers.push(m);
-        }
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message || "Failed to save chess spot");
-      } finally {
-        setAddingSpot(false);
-      }
-    });
-  };
-
-  // 3) Find Closest Player (unchanged)
-  const findClosestPlayer = async () => {
-    clearMapExtras();
-
-    const currentUser = getUser();
-    const username = currentUser.username;
-
-    const allUsers = await fetchUsers();
-    const self = allUsers.find((u) => u.username === username);
-    if (!self) return;
-
-    const filtered = allUsers.filter(
-      (u) =>
-        u.username !== username &&
-        u.elo >= searchRating[0] &&
-        u.elo <= searchRating[1]
-    );
-    const users: UserNode[] = [self, ...filtered];
-    if (users.length < 2) {
-      alert("No other matching players found.");
-      return;
-    }
-
-    const distances = await fetchDistanceMatrix(
-      users,
-      ORS_API_KEY,
-      transportMode
-    );
-    const graph = buildGraph(users, distances);
-    const dists = dijkstra(graph, username);
-
-    let closest: UserNode | null = null;
-    let minDist = Infinity;
-    for (const [uname, dist] of Object.entries(dists)) {
-      if (uname !== username && dist < minDist) {
-        minDist = dist;
-        closest = users.find((u) => u.username === uname) || null;
-      }
-    }
-    if (!closest) return;
-
-    if (!mapRef.current) return;
-    activeOpponentMarker = L.marker([closest.latitude, closest.longitude])
-      .addTo(mapRef.current)
-      .bindPopup(
-        `<b>${closest.username}</b><br/>ELO: ${
-          closest.elo
-        }<br/>Distance: ${minDist.toFixed(2)} km`
-      )
-      .openPopup();
-
-    activeRouteLine = await fetchRoutePolyline(
-      [self.longitude, self.latitude],
-      [closest.longitude, closest.latitude],
-      ORS_API_KEY,
-      transportMode
-    );
-    if (activeRouteLine) activeRouteLine.addTo(mapRef.current);
-    mapRef.current.setView([closest.latitude, closest.longitude], 13);
-  };
-
-  // 4) Find Best Match (unchanged)
-  const findBestMatch = async () => {
-    clearMapExtras();
-
-    const currentUser = getUser();
-    const username = currentUser.username;
-
-    const allUsers = await fetchUsers();
-    const self = allUsers.find((u) => u.username === username);
-    if (!self) return;
-
-    const filtered = allUsers.filter(
-      (u) =>
-        u.username !== username &&
-        u.elo >= searchRating[0] &&
-        u.elo <= searchRating[1]
-    );
-    const users: UserNode[] = [self, ...filtered];
-    if (users.length < 2) {
-      alert("No other matching players found.");
-      return;
-    }
-
-    const suitabilityOpts: SuitabilityOptions = {
-      maxDistanceKm: searchDistance,
-      targetElo: self.elo,
-      eloTolerance: 400,
-      weights: { distance: 1, elo: 2 },
-    };
-    let bestMatch: { user: UserNode; score: number } | null = null;
-    for (const candidate of users) {
-      if (candidate.username === username) continue;
-      const score = computeSuitability(self, candidate, suitabilityOpts);
-      if (!bestMatch || score > bestMatch.score) {
-        bestMatch = { user: candidate, score };
-      }
-    }
-    if (!bestMatch) return;
-    if (!mapRef.current) return;
-    
-    activeOpponentMarker = L.marker([
-      bestMatch.user.latitude,
-      bestMatch.user.longitude,
-    ])
-      .addTo(mapRef.current)
-      .bindPopup(
-        `<b>${bestMatch.user.username}</b><br/>ELO: ${
-          bestMatch.user.elo
-        }<br/>Suitability: ${bestMatch.score.toFixed(2)}`
-      )
-      .openPopup();
-
-    activeRouteLine = await fetchRoutePolyline(
-      [self.longitude, self.latitude],
-      [bestMatch.user.longitude, bestMatch.user.latitude],
-      ORS_API_KEY,
-      transportMode
-    );
-    if (activeRouteLine) activeRouteLine.addTo(mapRef.current);
-    mapRef.current.setView(
-      [bestMatch.user.latitude, bestMatch.user.longitude],
-      13
-    );
-  };
+  
 
   return (
     <div className="w-1/4 flex flex-col items-center">
@@ -346,7 +128,7 @@ export default function MapMenu() {
             sx={{ width: "50%", alignSelf: "center", mt: 1 }}
             variant="outlined"
             color="secondary"
-            onClick={findClosestPlayer}
+            onClick={() => findClosestPlayer(searchRating[0], searchRating[1], transportMode)}
           >
             Find Closest Player
           </Button>
@@ -355,7 +137,7 @@ export default function MapMenu() {
             sx={{ width: "50%", alignSelf: "center", mt: 1 }}
             variant="outlined"
             color="primary"
-            onClick={findBestMatch}
+            onClick={() => findBestMatch(searchRating[0], searchRating[1], searchDistance, transportMode)}
           >
             Find Best Match
           </Button>
@@ -368,7 +150,7 @@ export default function MapMenu() {
             sx={{ width: "80%", mt: 2 }}
             variant="contained"
             color="secondary"
-            onClick={loadChessSpots}
+            onClick={() => loadChessSpots()}
           >
             Load Chess Spots
           </Button>
@@ -377,7 +159,10 @@ export default function MapMenu() {
             sx={{ width: "80%", mt: 1 }}
             variant="contained"
             color="secondary"
-            onClick={enableAddSpot}
+            onClick={() => {
+              setAddingSpot(true);
+              enableAddSpot();
+            }}
             disabled={addingSpot}
           >
             {addingSpot ? "Click on map…" : "Add Chess Spot"}

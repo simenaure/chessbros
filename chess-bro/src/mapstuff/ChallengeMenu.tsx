@@ -1,27 +1,51 @@
-import { useState } from "react";
-import {challengeModeRef, exitChallengeView } from "./map";
+import { useEffect, useState } from "react";
+import {challengeModeRef, drawChessSpot, exitChallengeView, getUser, mapRef } from "./map";
 import { Button, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { ChessLocation, fetchChessLocations } from "./setLocation";
 
 
 export default function ChallengeMenu() {
 
     const [format, setFormat] = useState("blitz");
-    const [location, setLocation] = useState();
+    const [location, setLocation] = useState<ChessLocation>();
 
-    const currentUser = localStorage.getItem("currentUser");
-    if (!currentUser) return;
-    const player = JSON.parse(currentUser);
+    const[suitableLocations, setSuitableLocations] = useState<ChessLocation[]>();
+
+    const player = getUser();
     const opponent = challengeModeRef.selectedUser;
 
     const playerFav = "bullet";
     const opponentFav = "rapid";
 
-    const suitableLocations : number[] = [1, 2, 3, 4, 5];
+    useEffect(() => {
+        (async () => {
+            try {
+                const locations = await fetchChessLocations();
+                if (!locations) return;                
+
+                const filtered = locations.filter(loc => {
+                    if (!mapRef.current) return false;
+                    if (!challengeModeRef.searchDistance) return false;
+                    //500 er lik halve søkeradius i meter
+                    return mapRef.current.distance([player.latitude, player.longitude], [loc.latitude, loc.longitude])/500 < challengeModeRef.searchDistance
+                    || mapRef.current.distance(opponent.location, [loc.latitude, loc.longitude])/500 < challengeModeRef.searchDistance;
+                })
+                //mapRef.current.distance(userPos, [u.latitude, u.longitude]) / 1000;
+
+                filtered.forEach(loc => drawChessSpot(loc))
+                setSuitableLocations(filtered);
+            } catch (err) {
+                console.error("Failed to fetch locations:", err);
+            }
+        })();
+    }, []);
+
+        
 
     const formatOutline  = (format : string) => {
-        if (format == playerFav && format == opponentFav) return "0 0 25px rgba(0, 0, 200, 0.5)";
-        if (format == playerFav) return "0 0 25px rgba(0, 200, 0, 0.5)";
-        if (format == opponentFav) return "0 0 25px rgba(200, 0, 0, 0.5)";
+        if (format == playerFav && format == opponentFav) return "0 0 15px rgba(0, 0, 200, 0.5)";
+        if (format == playerFav) return "0 0 15px rgba(0, 200, 0, 0.5)";
+        if (format == opponentFav) return "0 0 15px rgba(200, 0, 0, 0.5)";
         return "";
     };
 
@@ -49,7 +73,7 @@ export default function ChallengeMenu() {
             <h2 className="text-3xl mb-2">Suggest a format</h2>
             <ToggleButtonGroup
                 value={format}
-                onChange={(e, val) => setFormat(val)}
+                onChange={(e, form) => setFormat(form)}
                 exclusive
                 color="warning"
                 sx={{
@@ -109,19 +133,28 @@ export default function ChallengeMenu() {
             <h2 className="text-3xl mb-2">Suggest a location</h2>
             <ToggleButtonGroup
                 value={location}
-                onChange={(e, val) => setLocation(val)}
+                onChange={(e, loc) => setLocation(loc)}
                 exclusive
                 color="warning"
                 sx={{
                     width: "100%",
                     display: "flex",
                     justifyContent: "space-around",
-                    paddingX: "20px"
+                    paddingX: "20px",
+                    overflowX: "auto",
+                    whiteSpace: "nowrap"
                 }}
             >
-                {suitableLocations.map((loc, i) => (
-                    <ToggleButton key={i} value={loc}>
-                        {loc}
+                {suitableLocations?.map((loc, i) => (
+                    <ToggleButton 
+                        key={i}
+                        value={loc}
+                        sx={{
+                            mx: "5px",
+                            fontSize: "0.7em"
+                        }}
+                    >
+                        {loc.name}
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
@@ -136,7 +169,6 @@ export default function ChallengeMenu() {
             >
                 Send challenge
             </Button>
-            {format}{location}
         </div>
     )
 }
