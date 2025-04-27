@@ -1,4 +1,5 @@
 // src/map.ts
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import L, { LatLngTuple } from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -10,19 +11,17 @@ import {
   fetchDistanceMatrix,
   buildGraph,
   dijkstra,
-  fetchRoutePolyline,
   UserNode,
 } from "./dijkstra";
 
 import { computeSuitability, SuitabilityOptions } from "./suitability";
-
 import {
   fetchChessLocations,
   createChessLocation,
   ChessLocation,
 } from "./setLocation";
 
-// ─── Setup default Leaflet marker ───────────────────────────────────────────
+/* ── Leaflet default icon override ───────────────────────────────────────── */
 delete (L.Icon.Default as any).prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -30,8 +29,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-// ─── Refs and Global Vars ───────────────────────────────────────────────────
+/* ── Top-level refs & globals ────────────────────────────────────────────── */
 export const mapRef: { current: L.Map | null } = { current: null };
+
 export const challengeModeRef: {
   setChallengeMode?: React.Dispatch<React.SetStateAction<boolean>>;
   chal?: boolean;
@@ -50,7 +50,7 @@ const ORS_API_KEY = "5b3ce3597851110001cf6248531655d52f1145c084f0e9a22f18ff56";
 let userPos: LatLngTuple = [0, 0];
 let searchRange: L.Circle | null = null;
 let drawnRoutes: L.Polyline[] = [];
-let white: boolean = true;
+let white = true;
 
 const chessboardIcon = new L.Icon({
   iconUrl: "/Chessboard.png",
@@ -62,7 +62,7 @@ let activeRouteLine: L.Polyline | null = null;
 let activeOpponentMarker: L.Marker | null = null;
 let chessMarkers: L.Marker[] = [];
 
-// ─── Map Init ───────────────────────────────────────────────────────────────
+/* ═════════════════ Map init & user marker ═════════════════════════════════ */
 export function initMap(containerId = "map") {
   if (!mapRef.current) {
     mapRef.current = L.map(containerId).setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
@@ -97,11 +97,29 @@ export function initMap(containerId = "map") {
   );
 }
 
-// ─── User Position Marker ───────────────────────────────────────────────────
+export function getUser() {
+  const stored = localStorage.getItem("currentUser");
+  if (!stored || !mapRef.current) return;
+  return JSON.parse(stored);
+}
+
+function saveUserLocation(lat: number, lng: number) {
+  const cu = getUser();
+  if (!cu) return;
+  fetch("http://localhost:3001/api/users/location", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: cu.username,
+      latitude: lat,
+      longitude: lng,
+    }),
+  }).catch(console.error);
+}
+
 export function userLocation() {
   if (!mapRef.current) return;
   const map = mapRef.current;
-
   const currentUser = getUser();
   if (currentUser?.latitude != null && currentUser?.longitude != null) {
     userPos = [currentUser.latitude, currentUser.longitude];
@@ -126,32 +144,19 @@ export function userLocation() {
   });
 }
 
-// ─── Save user location to backend ──────────────────────────────────────────
-function saveUserLocation(lat: number, lng: number) {
-  const cu = getUser();
-  if (cu)
-    fetch("http://localhost:3001/api/users/location", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: cu.username,
-        latitude: lat,
-        longitude: lng,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => console.log("✅ Location saved:", data))
-      .catch((err) => console.error("🔥 Save failed:", err));
+/* ═════════════════ Helpers to reset / clear map ═══════════════════════════ */
+export function resetMap() {
+  if (!mapRef.current) return;
+  const map = mapRef.current;
+  map.eachLayer((layer) => {
+    if (layer instanceof L.TileLayer) return;
+    if ((map as any)._userMarker && layer === (map as any)._userMarker) return;
+    map.removeLayer(layer);
+  });
+  drawnRoutes.forEach((line) => map.removeLayer(line));
+  drawnRoutes = [];
 }
 
-// ─── Localstorage getUser ───────────────────────────────────────────────────
-export function getUser() {
-  const stored = localStorage.getItem("currentUser");
-  if (!stored || !mapRef.current) return;
-  return JSON.parse(stored);
-}
-
-// ─── Clear routes and active markers ────────────────────────────────────────
 export function clearMapExtras() {
   if (!mapRef.current) return;
   if (activeRouteLine) {
@@ -163,30 +168,16 @@ export function clearMapExtras() {
     activeOpponentMarker = null;
   }
 }
-// ─── Draw Search Circle ─────────────────────────────────────────────────────
+
 export function drawCircle(radiusKm: number) {
   if (!mapRef.current) return;
   if (searchRange) mapRef.current.removeLayer(searchRange);
-  searchRange = L.circle(userPos, { radius: radiusKm * 1000 });
-  searchRange.addTo(mapRef.current);
+  searchRange = L.circle(userPos, { radius: radiusKm * 1000 }).addTo(
+    mapRef.current
+  );
 }
 
-// ─── Reset Map (clears everything except tile layer and user marker) ─────────
-export function resetMap() {
-  if (!mapRef.current) return;
-  const map = mapRef.current;
-  map.eachLayer((layer) => {
-    if (!(layer instanceof L.TileLayer)) {
-      if ((map as any)._userMarker && layer === (map as any)._userMarker)
-        return;
-      map.removeLayer(layer);
-    }
-  });
-  drawnRoutes.forEach((line) => map.removeLayer(line));
-  drawnRoutes = [];
-}
-
-// ─── Search Profiles ────────────────────────────────────────────────────────
+/* ═════════════════ Profile search & challenge popups ══════════════════════ */
 export function searchProfiles(
   whiteMode: boolean,
   ratingRange: [number, number],
@@ -203,12 +194,11 @@ export function searchProfiles(
   userLocation();
 
   const cu = getUser();
-  let me = "";
+  let meName = "";
   if (cu) {
-    if (cu.latitude != null && cu.longitude != null) {
+    if (cu.latitude != null && cu.longitude != null)
       userPos = [cu.latitude, cu.longitude];
-    }
-    me = cu.username;
+    meName = cu.username;
   }
 
   fetch("http://localhost:3001/api/users/locations")
@@ -223,10 +213,9 @@ export function searchProfiles(
         }[];
       }) => {
         data.locations.forEach((u) => {
-          if (u.username === me) return;
+          if (u.username === meName) return;
           const elo = u.elo ?? 0;
           if (elo < ratingRange[0] || elo > ratingRange[1]) return;
-
           const distKm =
             map.distance(userPos, [u.latitude, u.longitude]) / 1000;
           if (distKm > distanceKm) return;
@@ -245,7 +234,6 @@ export function searchProfiles(
     .catch(console.error);
 }
 
-// ─── User Popup ─────────────────────────────────────────────────────────────
 function userPopup(
   u: { username: string; rating: number; location: LatLngTuple },
   whiteMode: boolean
@@ -253,47 +241,43 @@ function userPopup(
   if (!mapRef.current) return;
   const map = mapRef.current;
 
-  let img: string;
-  if (u.rating < 500) img = "pawn.png";
-  else if (u.rating < 800) img = "knight.png";
-  else if (u.rating < 1000) img = "bishop.png";
-  else if (u.rating < 1500) img = "rook.png";
-  else if (u.rating < 2000) img = "queen.png";
-  else img = "king.png";
+  const rankIcon = (rating: number) => {
+    if (rating < 500) return "pawn.png";
+    if (rating < 800) return "knight.png";
+    if (rating < 1000) return "bishop.png";
+    if (rating < 1500) return "rook.png";
+    if (rating < 2000) return "queen.png";
+    return "king.png";
+  };
 
-  const icon = L.icon({
-    iconUrl: whiteMode ? `white${img}` : `black${img}`,
-    iconSize: [30, 30],
-  });
-
-  const marker = L.marker(u.location, { icon }).addTo(map);
+  const marker = L.marker(u.location, {
+    icon: L.icon({
+      iconUrl: whiteMode
+        ? `white${rankIcon(u.rating)}`
+        : `black${rankIcon(u.rating)}`,
+      iconSize: [30, 30],
+    }),
+  }).addTo(map);
 
   if (!challengeModeRef.chal) {
-    const popupDiv = document.createElement("div");
-    const heading = document.createElement("h1");
-    heading.textContent = u.username;
-    const ratingP = document.createElement("p");
-    ratingP.textContent = `ELO: ${u.rating}`;
-
-    const button = document.createElement("button");
-    button.textContent = "Send challenge";
-    button.style.backgroundColor = "lightblue";
-    button.onclick = () => challengeView(u);
-
-    popupDiv.appendChild(heading);
-    popupDiv.appendChild(ratingP);
-    popupDiv.appendChild(button);
-
-    marker.bindPopup(popupDiv);
+    const div = document.createElement("div");
+    const h = document.createElement("h1");
+    h.textContent = u.username;
+    const p = document.createElement("p");
+    p.textContent = `ELO: ${u.rating}`;
+    const btn = document.createElement("button");
+    btn.textContent = "Send challenge";
+    btn.style.backgroundColor = "lightblue";
+    btn.onclick = () => challengeView(u);
+    div.append(h, p, btn);
+    marker.bindPopup(div);
   }
 }
 
-// ─── Challenge View ─────────────────────────────────────────────────────────
 function challengeView(opponent: any) {
   if (challengeModeRef.setChallengeMode) {
-    challengeModeRef.selectedUser = opponent;
+    Object.assign(challengeModeRef, { selectedUser: opponent, chal: true });
     challengeModeRef.setChallengeMode(() => true);
-    challengeModeRef.chal = true;
   }
   resetMap();
   userPopup(opponent, white);
@@ -307,12 +291,7 @@ export function exitChallengeView() {
   resetMap();
 }
 
-// ─── Suitable Locations Dummy ───────────────────────────────────────────────
-export function suitableLocations(_: any, __: any) {
-  return [1, 2, 3];
-}
-
-// ─── Chess Spots: Draw, Load, Add ───────────────────────────────────────────
+/* ═════════════════ Chess spots (draw, load, add) ══════════════════════════ */
 export function drawChessSpot(spot: ChessLocation) {
   if (!mapRef.current) return;
   const newSpot = L.marker([spot.latitude, spot.longitude], {
@@ -321,11 +300,11 @@ export function drawChessSpot(spot: ChessLocation) {
     .addTo(mapRef.current)
     .bindPopup(
       `<b>${spot.name}</b><br/>Type: ${spot.location_type}<br/>
-      <select id="transport-${spot.location_id}" style="margin-top:5px;">
-        <option value="foot-walking">Walk</option>
-        <option value="driving-car">Drive</option>
-      </select><br/>
-      <button id="goToSpot-${spot.location_id}" style="background-color:lightblue;margin-top:5px;">Find Route</button>`
+       <select id="transport-${spot.location_id}" style="margin-top:5px;">
+         <option value="foot-walking">Walk</option>
+         <option value="driving-car">Drive</option>
+       </select><br/>
+       <button id="goToSpot-${spot.location_id}" style="background-color:lightblue;margin-top:5px;">Find Route</button>`
     )
     .on("popupopen", () => {
       const btn = document.getElementById(`goToSpot-${spot.location_id}`);
@@ -333,20 +312,17 @@ export function drawChessSpot(spot: ChessLocation) {
         `transport-${spot.location_id}`
       ) as HTMLSelectElement;
       if (btn && select) {
-        btn.addEventListener("click", async () => {
-          const mode = select.value as "foot-walking" | "driving-car";
-          await findPathToLocation(spot, mode);
-        });
+        btn.addEventListener("click", () =>
+          findPathToLocation(spot, select.value as any)
+        );
       }
     });
   return newSpot;
 }
 
 export async function loadChessSpots() {
-  if (chessMarkers.length > 0) {
-    chessMarkers.forEach((m) => mapRef.current?.removeLayer(m));
-    chessMarkers = [];
-  }
+  chessMarkers.forEach((m) => mapRef.current?.removeLayer(m));
+  chessMarkers = [];
   try {
     const spots = await fetchChessLocations();
     spots.forEach((s) => {
@@ -361,81 +337,62 @@ export async function loadChessSpots() {
 
 export function enableAddSpot() {
   if (!mapRef.current) return;
-  if (addingSpotRef.setAddingSpot) {
-    addingSpotRef.setAddingSpot(() => true);
-  }
+  addingSpotRef.setAddingSpot?.(() => true);
 
   mapRef.current.once("click", async (e: L.LeafletMouseEvent) => {
     const { lat, lng } = e.latlng;
     const name = prompt("Spot name:")?.trim();
-    const location_type = prompt("Spot type (e.g. park):")?.trim();
-    if (!name || !location_type) {
+    const type = prompt("Spot type (e.g. park):")?.trim();
+    if (!name || !type) {
       alert("Name & type required");
-      if (addingSpotRef.setAddingSpot) {
-        addingSpotRef.setAddingSpot(() => false);
-      }
+      addingSpotRef.setAddingSpot?.(() => false);
       return;
     }
     try {
       const newLoc = await createChessLocation({
         name,
-        location_type,
+        location_type: type,
         latitude: lat,
         longitude: lng,
       });
-      if (mapRef.current) {
-        const m = drawChessSpot(newLoc);
-        if (m) chessMarkers.push(m);
-      }
+      const m = drawChessSpot(newLoc);
+      if (m) chessMarkers.push(m);
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Failed to save chess spot");
     } finally {
-      if (addingSpotRef.setAddingSpot) {
-        addingSpotRef.setAddingSpot(() => false);
-      }
+      addingSpotRef.setAddingSpot?.(() => false);
     }
   });
 }
 
-// ─── Fetch Route Polyline with Distance ─────────────────────────────────────
+/* ═════════════════ ORS helper for real routed polyline ═════════════════════ */
 export async function fetchRoutePolylineWithDistance(
   from: [number, number],
   to: [number, number],
   apiKey: string,
   transportMode: "driving-car" | "foot-walking"
 ): Promise<{ polyline: L.Polyline; distanceKm: number }> {
-  const url = `https://api.openrouteservice.org/v2/directions/${transportMode}/geojson`;
-  const body = { coordinates: [from, to] };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch route");
-  }
-
+  const res = await fetch(
+    `https://api.openrouteservice.org/v2/directions/${transportMode}/geojson`,
+    {
+      method: "POST",
+      headers: { Authorization: apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ coordinates: [from, to] }),
+    }
+  );
+  if (!res.ok) throw new Error("ORS route error");
   const data = await res.json();
   const coords = data.features[0].geometry.coordinates.map((c: number[]) => [
     c[1],
     c[0],
   ]) as LatLngTuple[];
-  const distanceMeters = data.features[0].properties.summary.distance;
-  const distanceKm = distanceMeters / 1000;
-
-  return {
-    polyline: L.polyline(coords, { weight: 5 }),
-    distanceKm,
-  };
+  const distanceKm = data.features[0].properties.summary.distance / 1000;
+  const polyline = L.polyline(coords, { weight: 5 });
+  return { polyline, distanceKm };
 }
 
-// ─── Find Path to Chess Spot ─────────────────────────────────────────────────
+/* ═════════════════ Path to chess spot (real route) ═════════════════════════ */
 export async function findPathToLocation(
   spot: ChessLocation,
   transportMode: "driving-car" | "foot-walking"
@@ -456,6 +413,9 @@ export async function findPathToLocation(
     ORS_API_KEY,
     transportMode
   );
+  polyline.setStyle({
+    color: transportMode === "foot-walking" ? "green" : "blue",
+  });
 
   activeRouteLine = polyline;
   activeRouteLine.addTo(mapRef.current);
@@ -471,7 +431,7 @@ export async function findPathToLocation(
   mapRef.current.setView([spot.latitude, spot.longitude], 13);
 }
 
-// ─── Find Closest Player ────────────────────────────────────────────────────
+/* ═════════════════ Players – closest / best match (real route) ═════════════ */
 export async function findClosestPlayer(
   minRating: number,
   maxRating: number,
@@ -515,33 +475,32 @@ export async function findClosestPlayer(
       closest = users.find((u) => u.username === uname) || null;
     }
   }
-  if (!closest) return;
+  if (!closest || !mapRef.current) return;
 
-  if (!mapRef.current) return;
-  const marker = L.marker([closest.latitude, closest.longitude])
-    .addTo(mapRef.current)
-    .bindPopup(
-      `<b>${closest.username}</b><br/>ELO: ${
-        closest.elo
-      }<br/>Travel Distance: ${minDist.toFixed(2)} km`
-    )
-    .openPopup();
-  activeOpponentMarker = marker;
-
-  const { polyline } = await fetchRoutePolylineWithDistance(
+  const { polyline, distanceKm } = await fetchRoutePolylineWithDistance(
     [self.longitude, self.latitude],
     [closest.longitude, closest.latitude],
     ORS_API_KEY,
     transportMode
   );
-
+  polyline.setStyle({
+    color: transportMode === "foot-walking" ? "green" : "blue",
+  });
   activeRouteLine = polyline;
   activeRouteLine.addTo(mapRef.current);
+
+  activeOpponentMarker = L.marker([closest.latitude, closest.longitude])
+    .addTo(mapRef.current)
+    .bindPopup(
+      `<b>${closest.username}</b><br/>ELO: ${
+        closest.elo
+      }<br/>Travel Distance: ${distanceKm.toFixed(2)} km`
+    )
+    .openPopup();
 
   mapRef.current.setView([closest.latitude, closest.longitude], 13);
 }
 
-// ─── Find Best Match Player ─────────────────────────────────────────────────
 export async function findBestMatch(
   minRating: number,
   maxRating: number,
@@ -570,46 +529,48 @@ export async function findBestMatch(
     return;
   }
 
-  const suitabilityOpts: SuitabilityOptions = {
+  const opts: SuitabilityOptions = {
     maxDistanceKm: searchDistance,
     targetElo: self.elo,
     eloTolerance: 400,
     weights: { distance: 1, elo: 2 },
   };
 
-  let bestMatch: { user: UserNode; score: number } | null = null;
-  for (const candidate of users) {
-    if (candidate.username === username) continue;
-    const score = computeSuitability(self, candidate, suitabilityOpts);
-    if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { user: candidate, score };
-    }
+  let best: { user: UserNode; score: number } | null = null;
+  for (const cand of users) {
+    if (cand.username === username) continue;
+    const s = computeSuitability(self, cand, opts);
+    if (!best || s > best.score) best = { user: cand, score: s };
   }
-  if (!bestMatch) return;
+  if (!best || !mapRef.current) return;
 
-  if (!mapRef.current) return;
-  const marker = L.marker([bestMatch.user.latitude, bestMatch.user.longitude])
-    .addTo(mapRef.current)
-    .bindPopup(
-      `<b>${bestMatch.user.username}</b><br/>ELO: ${
-        bestMatch.user.elo
-      }<br/>Suitability Score: ${bestMatch.score.toFixed(2)}`
-    )
-    .openPopup();
-  activeOpponentMarker = marker;
-
-  const { polyline } = await fetchRoutePolylineWithDistance(
+  const { polyline, distanceKm } = await fetchRoutePolylineWithDistance(
     [self.longitude, self.latitude],
-    [bestMatch.user.longitude, bestMatch.user.latitude],
+    [best.user.longitude, best.user.latitude],
     ORS_API_KEY,
     transportMode
   );
-
+  polyline.setStyle({
+    color: transportMode === "foot-walking" ? "green" : "blue",
+  });
   activeRouteLine = polyline;
   activeRouteLine.addTo(mapRef.current);
 
-  mapRef.current.setView(
-    [bestMatch.user.latitude, bestMatch.user.longitude],
-    13
-  );
+  activeOpponentMarker = L.marker([best.user.latitude, best.user.longitude])
+    .addTo(mapRef.current)
+    .bindPopup(
+      `<b>${best.user.username}</b><br/>ELO: ${
+        best.user.elo
+      }<br/>Travel Distance: ${distanceKm.toFixed(
+        2
+      )} km<br/>Suitability: ${best.score.toFixed(2)}`
+    )
+    .openPopup();
+
+  mapRef.current.setView([best.user.latitude, best.user.longitude], 13);
+}
+
+/* dummy util (if elsewhere) */
+export function suitableLocations(_: any, __: any) {
+  return [1, 2, 3];
 }
