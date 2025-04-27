@@ -12,10 +12,18 @@ import {
   InputLabel,
   FormControl,
 } from "@mui/material";
-import { drawCircle, resetMap, userLocation, searchProfiles, clearMapExtras, findClosestPlayer, findBestMatch, loadChessSpots, enableAddSpot, addingSpotRef, challengeModeRef } from "./map";
-
-
-
+import {
+  drawCircle,
+  resetMap,
+  userLocation,
+  searchProfiles,
+  clearMapExtras,
+  findClosestPlayer,
+  findBestMatch,
+  loadChessSpots,
+  enableAddSpot,
+  addingSpotRef,
+} from "./map";
 
 export default function MapMenu() {
   const [isHidden, setIsHidden] = useState(false);
@@ -40,8 +48,6 @@ export default function MapMenu() {
   useEffect(() => {
     addingSpotRef.setAddingSpot = setAddingSpot;
   }, []);
-
-  
 
   return (
     <div className="w-1/4 flex flex-col items-center">
@@ -128,7 +134,9 @@ export default function MapMenu() {
             sx={{ width: "50%", alignSelf: "center", mt: 1 }}
             variant="outlined"
             color="secondary"
-            onClick={() => findClosestPlayer(searchRating[0], searchRating[1], transportMode)}
+            onClick={() =>
+              findClosestPlayer(searchRating[0], searchRating[1], transportMode)
+            }
           >
             Find Closest Player
           </Button>
@@ -137,36 +145,41 @@ export default function MapMenu() {
             sx={{ width: "50%", alignSelf: "center", mt: 1 }}
             variant="outlined"
             color="primary"
-            onClick={() => findBestMatch(searchRating[0], searchRating[1], searchDistance, transportMode)}
+            onClick={() =>
+              findBestMatch(
+                searchRating[0],
+                searchRating[1],
+                searchDistance,
+                transportMode
+              )
+            }
           >
             Find Best Match
           </Button>
-
-          
         </div>
       )}
       {/* ─── Chess-spot buttons ────────────────────────────────────────── */}
-          <Button
-            sx={{ width: "80%", mt: 2 }}
-            variant="contained"
-            color="secondary"
-            onClick={() => loadChessSpots()}
-          >
-            Load Chess Spots
-          </Button>
+      <Button
+        sx={{ width: "80%", mt: 2 }}
+        variant="contained"
+        color="secondary"
+        onClick={() => loadChessSpots()}
+      >
+        Load Chess Spots
+      </Button>
 
-          <Button
-            sx={{ width: "80%", mt: 1 }}
-            variant="contained"
-            color="secondary"
-            onClick={() => {
-              setAddingSpot(true);
-              enableAddSpot();
-            }}
-            disabled={addingSpot}
-          >
-            {addingSpot ? "Click on map…" : "Add Chess Spot"}
-          </Button>
+      <Button
+        sx={{ width: "80%", mt: 1 }}
+        variant="contained"
+        color="secondary"
+        onClick={() => {
+          setAddingSpot(true);
+          enableAddSpot();
+        }}
+        disabled={addingSpot}
+      >
+        {addingSpot ? "Click on map…" : "Add Chess Spot"}
+      </Button>
     </div>
   );
 }
