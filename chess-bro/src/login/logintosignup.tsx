@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import LoginPage from "./login";
 import SignUp from "./signup";
 
-// ✅ ADD THIS INTERFACE
+
 export interface LoginSetupProps {
   isOpen: boolean;
   onClose: () => void;
