@@ -21,7 +21,7 @@ import {
   ChessLocation,
 } from "./setLocation";
 
-/* ── Leaflet default icon override ───────────────────────────────────────── */
+/* ── Leaflet default icon override  */
 delete (L.Icon.Default as any).prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -29,7 +29,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-/* ── Top-level refs & globals ────────────────────────────────────────────── */
+/* ── Top-level refs & globals */
 export const mapRef: { current: L.Map | null } = { current: null };
 
 export const challengeModeRef: {
@@ -62,7 +62,7 @@ let activeRouteLine: L.Polyline | null = null;
 let activeOpponentMarker: L.Marker | null = null;
 let chessMarkers: L.Marker[] = [];
 
-/* ═════════════════ Map init & user marker ═════════════════════════════════ */
+/* Map init & user marker */
 export function initMap(containerId = "map") {
   if (!mapRef.current) {
     mapRef.current = L.map(containerId).setView(TRONDHEIM_CENTER, DEFAULT_ZOOM);
@@ -144,7 +144,7 @@ export function userLocation() {
   });
 }
 
-/* ═════════════════ Helpers to reset / clear map ═══════════════════════════ */
+/*  Helpers to reset / clear map  */
 export function resetMap() {
   if (!mapRef.current) return;
   const map = mapRef.current;
@@ -177,7 +177,7 @@ export function drawCircle(radiusKm: number) {
   );
 }
 
-/* ═════════════════ Profile search & challenge popups ══════════════════════ */
+/* Profile search & challenge popups*/
 export function searchProfiles(
   whiteMode: boolean,
   ratingRange: [number, number],
@@ -291,7 +291,7 @@ export function exitChallengeView() {
   resetMap();
 }
 
-/* ═════════════════ Chess spots (draw, load, add) ══════════════════════════ */
+/*  Chess spots (draw, load, add)  */
 export function drawChessSpot(spot: ChessLocation) {
   if (!mapRef.current) return;
   const newSpot = L.marker([spot.latitude, spot.longitude], {
@@ -366,7 +366,7 @@ export function enableAddSpot() {
   });
 }
 
-/* ═════════════════ ORS helper for real routed polyline ═════════════════════ */
+/* ORS helper for real routed polyline */
 export async function fetchRoutePolylineWithDistance(
   from: [number, number],
   to: [number, number],
